@@ -7,8 +7,8 @@ const CELL_SIZE := 4.0
 const BLOCK := 8
 const WATER_Y := -0.45
 const BRIDGE_Y := 0.35
-const KERB_W := 0.5      # pavement width in world units
-const LINE_W := 0.22     # centre line half-width
+const KERB_W := 0.5
+const LINE_W := 0.22
 
 const COL_GRASS := Color(0.40, 0.54, 0.31)
 const COL_PARK := Color(0.47, 0.62, 0.35)
@@ -22,6 +22,7 @@ const COL_BRIDGE := Color(0.46, 0.42, 0.38)
 @export var building_scene: PackedScene
 
 var grid: Array = []
+var river_horizontal := false
 var rng := RandomNumberGenerator.new()
 
 var _buildings_root: Node3D
@@ -68,14 +69,23 @@ func _blank_grid() -> void:
 
 
 func _carve_river() -> void:
-	var half := 2
-	var x := rng.randi_range(int(GRID * 0.35), int(GRID * 0.65))
-	for z in GRID:
-		# only drift every 4th row, so the bank doesn't staircase
-		if z % 4 == 0:
-			x = clampi(x + rng.randi_range(-1, 1), half + 1, GRID - half - 2)
-		for dx in range(-half, half + 1):
-			grid[x + dx][z] = Cell.WATER
+	river_horizontal = rng.randf() < 0.5
+	var half := rng.randi_range(1, 2)
+	var drift_every := rng.randi_range(3, 6)
+
+	var lo_clamp := half + 1
+	var hi_clamp := GRID - half - 2
+	var pos := rng.randi_range(int(GRID * 0.15), int(GRID * 0.85))
+	pos = clampi(pos, lo_clamp, hi_clamp)
+
+	for i in GRID:
+		if i % drift_every == 0:
+			pos = clampi(pos + rng.randi_range(-1, 1), lo_clamp, hi_clamp)
+		for d in range(-half, half + 1):
+			if river_horizontal:
+				grid[i][pos + d] = Cell.WATER
+			else:
+				grid[pos + d][i] = Cell.WATER
 
 
 func _lay_roads() -> void:
@@ -92,20 +102,25 @@ func _lay_roads() -> void:
 
 
 func _build_bridges(count: int) -> void:
+	# a bridge runs along a road line that crosses the river's axis
 	var lines: Array[int] = []
-	for z in GRID:
-		if z % BLOCK == 0:
-			lines.append(z)
+	for i in GRID:
+		if i % BLOCK == 0:
+			lines.append(i)
 
-	for i in count:
+	for n in count:
 		if lines.is_empty():
 			break
 		var pick: int = lines.pop_at(rng.randi() % lines.size())
-		for x in GRID:
-			if grid[x][pick] == Cell.WATER:
-				grid[x][pick] = Cell.BRIDGE
-			if pick + 1 < GRID and grid[x][pick + 1] == Cell.WATER:
-				grid[x][pick + 1] = Cell.BRIDGE
+		for i in GRID:
+			for offset in [0, 1]:
+				var line: int = pick + offset
+				if line >= GRID:
+					continue
+				var cx: int = line if river_horizontal else i
+				var cz: int = i if river_horizontal else line
+				if grid[cx][cz] == Cell.WATER:
+					grid[cx][cz] = Cell.BRIDGE
 
 
 func _place_parks() -> void:
@@ -292,12 +307,10 @@ func _add_markings(st: SurfaceTool, cx: int, cz: int) -> void:
 	var y := 0.05
 	var inset := s * 0.22
 
-	# road running down Z: centre line sits on the seam between the two cells
 	if cx % BLOCK == 0 and cz % BLOCK > 1 and cz % 2 == 0:
-		var seam := o.x + s
-		_flat(st, seam - LINE_W, o.z + inset, seam + LINE_W, o.z + s - inset, y, COL_LINE)
+		var seam_x := o.x + s
+		_flat(st, seam_x - LINE_W, o.z + inset, seam_x + LINE_W, o.z + s - inset, y, COL_LINE)
 
-	# road running across X
 	if cz % BLOCK == 0 and cx % BLOCK > 1 and cx % 2 == 0:
 		var seam_z := o.z + s
 		_flat(st, o.x + inset, seam_z - LINE_W, o.x + s - inset, seam_z + LINE_W, y, COL_LINE)
