@@ -7,7 +7,7 @@
 [ext_resource type="Script" uid="uid://b1u4xsr2euhgk" path="res://city_input.gd" id="4_1bvp3"]
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_7dm0k"]
-size = Vector2(300, 300)
+size = Vector2(400, 400)
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ig7tw"]
 albedo_color = Color(0.16470589, 0.16470589, 0.18039216, 1)
@@ -27,7 +27,7 @@ script = ExtResource("2_lquwl")
 unique_name_in_owner = true
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 250)
 projection = 1
-size = 130.0
+size = 180.0
 
 [node name="Sun" type="DirectionalLight3D" parent="."]
 transform = Transform3D(0.17364822, -0.41619775, 0.8925389, 0, 0.90630776, 0.42261827, -0.9848077, -0.073386915, 0.15737873, 0, 0, 0)
@@ -38,6 +38,7 @@ directional_shadow_mode = 0
 directional_shadow_max_distance = 500.0
 
 [node name="Ground" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.6, 0)
 mesh = SubResource("PlaneMesh_7dm0k")
 surface_material_override/0 = SubResource("StandardMaterial3D_ig7tw")
 

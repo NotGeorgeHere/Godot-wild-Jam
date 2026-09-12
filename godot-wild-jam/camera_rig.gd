@@ -9,7 +9,7 @@ const ZOOM_STEP := 12.0
 const ZOOM_SPEED := 8.0
 
 const PAN_SPEED := 90.0
-const PAN_LIMIT := 90.0
+const PAN_LIMIT := 110.0
 
 @onready var cam: Camera3D = %Camera3D
 
