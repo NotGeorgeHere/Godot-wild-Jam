@@ -1,10 +1,11 @@
-[gd_scene load_steps=9 format=3 uid="uid://bm3rldb4b8ydu"]
+[gd_scene load_steps=10 format=3 uid="uid://bm3rldb4b8ydu"]
 
 [ext_resource type="Script" uid="uid://tbs8l1dhwisl" path="res://main.gd" id="1_h2yge"]
 [ext_resource type="Script" uid="uid://b05ntw8ibm1bb" path="res://city_generator.gd" id="1_ig7tw"]
 [ext_resource type="PackedScene" uid="uid://bxlxrccsadmu5" path="res://building.tscn" id="2_0xm2m"]
 [ext_resource type="Script" uid="uid://cflwfdjpryxl4" path="res://camera_rig.gd" id="2_lquwl"]
 [ext_resource type="Script" uid="uid://b1u4xsr2euhgk" path="res://city_input.gd" id="4_1bvp3"]
+[ext_resource type="Script" uid="uid://tkffv5evwd72" path="res://citizens.gd" id="6_7mycd"]
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_7dm0k"]
 size = Vector2(400, 400)
@@ -51,3 +52,7 @@ building_scene = ExtResource("2_0xm2m")
 
 [node name="CityInput" type="Node" parent="."]
 script = ExtResource("4_1bvp3")
+
+[node name="Citizens" type="Node3D" parent="."]
+unique_name_in_owner = true
+script = ExtResource("6_7mycd")

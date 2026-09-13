@@ -29,7 +29,7 @@ const ROOF_COLS := [
 	Color(0.25, 0.27, 0.30),
 ]
 
-const TARGET_POPULATION := 600
+const TARGET_POPULATION := 1200
 
 @export var building_scene: PackedScene
 

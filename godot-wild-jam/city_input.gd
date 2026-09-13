@@ -4,6 +4,7 @@ const RAY_LENGTH := 2000.0
 const KNOCK_EFFECTIVENESS := 0.35
 
 @onready var camera: Camera3D = %Camera3D
+@onready var citizens := %Citizens
 
 var knock_cooldown := 0.5      # upgrades lower this
 var hovered: Building = null
@@ -44,6 +45,7 @@ func _try_knock() -> void:
 	var saved := hovered.knock(KNOCK_EFFECTIVENESS)
 	if saved > 0:
 		_cooldown_left = knock_cooldown
+		citizens.spawn(hovered.door_point(), hovered.door_normal(), mini(saved, 6))
 		print("saved %d — %d left in this building" % [saved, hovered.remaining])
 
 

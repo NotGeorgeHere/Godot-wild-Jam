@@ -78,3 +78,17 @@ func _push_fill() -> void:
 func _apply_tint() -> void:
 	mesh.set_instance_shader_parameter("full_color", Vector3(_tint.r, _tint.g, _tint.b))
 	mesh.set_instance_shader_parameter("door_dir", _door_dir)
+
+
+func door_point() -> Vector3:
+	var d := door_normal()
+	var half := (scale.z if absf(d.z) > 0.5 else scale.x) * 0.5
+	return global_position + d * (half + 0.6)
+
+
+func door_normal() -> Vector3:
+	match int(_door_dir):
+		1: return Vector3(0.0, 0.0, -1.0)
+		2: return Vector3(1.0, 0.0, 0.0)
+		3: return Vector3(-1.0, 0.0, 0.0)
+		_: return Vector3(0.0, 0.0, 1.0)
