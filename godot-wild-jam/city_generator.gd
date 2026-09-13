@@ -19,6 +19,18 @@ const COL_KERB := Color(0.62, 0.62, 0.64)
 const COL_LINE := Color(0.88, 0.85, 0.66)
 const COL_BRIDGE := Color(0.46, 0.42, 0.38)
 
+const HOUSE_HEIGHT_MAX := 13.0
+const ROOF_OVERHANG := 1.12
+
+const ROOF_COLS := [
+	Color(0.42, 0.24, 0.20),
+	Color(0.31, 0.31, 0.35),
+	Color(0.36, 0.28, 0.22),
+	Color(0.25, 0.27, 0.30),
+]
+
+const TARGET_POPULATION := 600
+
 @export var building_scene: PackedScene
 
 var grid: Array = []
@@ -27,6 +39,8 @@ var rng := RandomNumberGenerator.new()
 
 var _buildings_root: Node3D
 var _ground: MeshInstance3D
+var _roofs: MeshInstance3D
+var _roof_data: Array = []
 
 
 func _ready() -> void:
@@ -44,6 +58,11 @@ func _ready() -> void:
 	_ground.material_override = mat
 	add_child(_ground)
 
+	_roofs = MeshInstance3D.new()
+	_roofs.name = "RoofMesh"
+	_roofs.material_override = mat
+	add_child(_roofs)
+
 
 func generate(seed_value: int = -1) -> void:
 	rng.seed = seed_value if seed_value >= 0 else randi()
@@ -54,7 +73,9 @@ func generate(seed_value: int = -1) -> void:
 	_place_parks()
 	_clear_buildings()
 	_place_buildings()
+	_normalise_population()
 	_build_ground()
+	_build_roofs()
 
 
 # ---------------------------------------------------------------- grid passes
@@ -140,6 +161,7 @@ func _place_parks() -> void:
 # ------------------------------------------------------------------ buildings
 
 func _clear_buildings() -> void:
+	_roof_data.clear()
 	for child in _buildings_root.get_children():
 		child.queue_free()
 
@@ -167,16 +189,79 @@ func _try_spawn(cx: int, cz: int, dist: float) -> void:
 			if grid[x][z] != Cell.GRASS:
 				return
 
-	var b := building_scene.instantiate() as Building
-	_buildings_root.add_child(b)
-
-	var footprint: float = CELL_SIZE * 3.0 * rng.randf_range(0.5, 0.68)
+	var span := CELL_SIZE * 3.0
 	var tall: float = rng.randf_range(26.0, 48.0)
 	var short: float = rng.randf_range(4.0, 10.0)
 	var height: float = lerpf(tall, short, pow(dist, 0.7))
 
-	b.setup(footprint, height, rng.randi())
-	b.position = _cell_to_world(cx, cz) + Vector3(CELL_SIZE * 1.5, 0.0, CELL_SIZE * 1.5)
+	var is_house := height <= HOUSE_HEIGHT_MAX
+	var width: float
+	var depth: float
+
+	if is_house:
+		# houses are wider and often noticeably rectangular
+		width = span * rng.randf_range(0.56, 0.76)
+		depth = width * rng.randf_range(0.60, 0.95)
+		if rng.randf() < 0.5:
+			var swap := width
+			width = depth
+			depth = swap
+	else:
+		width = span * rng.randf_range(0.5, 0.68)
+		depth = width * rng.randf_range(0.88, 1.14)
+
+	var b := building_scene.instantiate() as Building
+	_buildings_root.add_child(b)
+
+	var volume: float = width * depth * height
+	var people: int = maxi(2, int(volume * 0.012 * rng.randf_range(0.75, 1.25)))
+	
+	var door_dir := _nearest_road_dir(cx, cz)
+	
+	var pos := _cell_to_world(cx, cz) + Vector3(CELL_SIZE * 1.5, 0.0, CELL_SIZE * 1.5)
+	b.setup(width, depth, height, rng.randi(), people, door_dir)
+	b.position = pos
+
+	if is_house:
+		_roof_data.append({
+			"pos": pos,
+			"w": width,
+			"d": depth,
+			"h": height,
+			"pitch": rng.randf_range(1.4, 2.6),
+			"ridge_z": depth >= width,
+			"col": ROOF_COLS[rng.randi() % ROOF_COLS.size()],
+		})
+
+
+func _normalise_population() -> void:
+	var all := _buildings_root.get_children()
+	if all.is_empty():
+		return
+
+	var total := 0
+	for b in all:
+		total += b.occupants
+	if total == 0:
+		return
+
+	var factor: float = float(TARGET_POPULATION) / float(total)
+	var assigned := 0
+	for b in all:
+		b.occupants = maxi(1, int(round(b.occupants * factor)))
+		b.remaining = b.occupants
+		assigned += b.occupants
+
+	var drift := TARGET_POPULATION - assigned
+	if drift != 0:
+		var biggest: Building = all[0]
+		for b in all:
+			if b.occupants > biggest.occupants:
+				biggest = b
+		biggest.occupants = maxi(1, biggest.occupants + drift)
+		biggest.remaining = biggest.occupants
+
+	print("city population: %d across %d buildings" % [TARGET_POPULATION, all.size()])
 
 
 # --------------------------------------------------------------- ground build
@@ -213,6 +298,61 @@ func _colour_for(type: int) -> Color:
 		Cell.PARK: return COL_PARK
 		Cell.BRIDGE: return COL_BRIDGE
 		_: return COL_GRASS
+
+
+# ----------------------------------------------------------------- roof build
+
+func _build_roofs() -> void:
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	for r in _roof_data:
+		_add_roof(st, r["pos"], r["w"], r["d"], r["h"], r["pitch"], r["ridge_z"], r["col"])
+	_roofs.mesh = st.commit()
+
+
+func _add_roof(st: SurfaceTool, pos: Vector3, w: float, d: float, h: float,
+		pitch: float, ridge_z: bool, col: Color) -> void:
+	var hw := w * 0.5 * ROOF_OVERHANG
+	var hd := d * 0.5 * ROOF_OVERHANG
+	var x0 := pos.x - hw
+	var x1 := pos.x + hw
+	var z0 := pos.z - hd
+	var z1 := pos.z + hd
+	var y0 := h
+	var y1 := h + pitch
+
+	if ridge_z:
+		# ridge runs along Z; slopes face -X and +X
+		var ra := Vector3(pos.x, y1, z0)
+		var rb := Vector3(pos.x, y1, z1)
+		var a0 := Vector3(x0, y0, z0)
+		var a1 := Vector3(x0, y0, z1)
+		var b0 := Vector3(x1, y0, z0)
+		var b1 := Vector3(x1, y0, z1)
+		var nl := Vector3(-pitch, hw, 0.0).normalized()
+		var nr := Vector3(pitch, hw, 0.0).normalized()
+		_tri(st, a0, a1, rb, nl, col)
+		_tri(st, a0, rb, ra, nl, col)
+		_tri(st, b1, b0, ra, nr, col)
+		_tri(st, b1, ra, rb, nr, col)
+		_tri(st, a0, ra, b0, Vector3(0.0, 0.0, -1.0), col)
+		_tri(st, b1, rb, a1, Vector3(0.0, 0.0, 1.0), col)
+	else:
+		# ridge runs along X; slopes face -Z and +Z
+		var ra := Vector3(x0, y1, pos.z)
+		var rb := Vector3(x1, y1, pos.z)
+		var c0 := Vector3(x0, y0, z0)
+		var c1 := Vector3(x1, y0, z0)
+		var d0 := Vector3(x0, y0, z1)
+		var d1 := Vector3(x1, y0, z1)
+		var nf := Vector3(0.0, hd, -pitch).normalized()
+		var nb := Vector3(0.0, hd, pitch).normalized()
+		_tri(st, c0, c1, rb, nf, col)
+		_tri(st, c0, rb, ra, nf, col)
+		_tri(st, d1, d0, ra, nb, col)
+		_tri(st, d1, ra, rb, nb, col)
+		_tri(st, c0, ra, d0, Vector3(-1.0, 0.0, 0.0), col)
+		_tri(st, d1, rb, c1, Vector3(1.0, 0.0, 0.0), col)
 
 
 # --------------------------------------------------------------- mesh helpers
@@ -329,3 +469,36 @@ func _cell_to_world(x: int, z: int) -> Vector3:
 		0.0,
 		(z - GRID * 0.5) * CELL_SIZE
 	)
+
+
+func _nearest_road_dir(cx: int, cz: int) -> float:
+	# building occupies cells cx..cx+2, cz..cz+2
+	var probes := [
+		[2.0, 1, 0, cx + 2, cz + 1],    # +X
+		[3.0, -1, 0, cx, cz + 1],       # -X
+		[0.0, 0, 1, cx + 1, cz + 2],    # +Z
+		[1.0, 0, -1, cx + 1, cz],       # -Z
+	]
+
+	var best_dir := 0.0
+	var best_dist := 999
+
+	for p in probes:
+		var dir: float = p[0]
+		var dx: int = p[1]
+		var dz: int = p[2]
+		var x: int = p[3]
+		var z: int = p[4]
+		for step in range(1, 6):
+			x += dx
+			z += dz
+			if x < 0 or x >= GRID or z < 0 or z >= GRID:
+				break
+			var c: int = grid[x][z]
+			if c == Cell.ROAD or c == Cell.BRIDGE:
+				if step < best_dist:
+					best_dist = step
+					best_dir = dir
+				break
+
+	return best_dir

@@ -1,0 +1,11 @@
+[gd_resource type="ShaderMaterial" load_steps=2 format=3 uid="uid://b1i3il85qnjtu"]
+
+[ext_resource type="Shader" uid="uid://clfbdila742j7" path="res://shader/building.gdshader" id="1_nwgi5"]
+
+[resource]
+render_priority = 0
+shader = ExtResource("1_nwgi5")
+shader_parameter/empty_color = Color(0.2, 0.62, 0.52, 1)
+shader_parameter/full_color = Color(0.55, 0.55, 0.58, 1)
+shader_parameter/edge_softness = 0.02
+shader_parameter/roughness_value = 0.9
