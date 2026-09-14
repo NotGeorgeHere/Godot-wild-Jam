@@ -1,9 +1,9 @@
 shader_type spatial;
 render_mode cull_back, diffuse_burley;
 
-instance uniform vec3 full_color : source_color = vec3(0.55, 0.55, 0.58);
-instance uniform float fill_level : hint_range(0.0, 1.0) = 0.0;
-instance uniform float door_dir : hint_range(0.0, 3.0) = 0.0;
+uniform vec3 full_color : source_color = vec3(0.55, 0.55, 0.58);
+uniform float fill_level : hint_range(0.0, 1.0) = 0.0;
+uniform float door_dir : hint_range(0.0, 3.0) = 0.0;
 
 uniform vec3 empty_color : source_color = vec3(0.20, 0.62, 0.52);
 uniform vec3 window_lit : source_color = vec3(0.98, 0.87, 0.58);

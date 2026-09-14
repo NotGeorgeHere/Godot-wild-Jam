@@ -10,7 +10,7 @@ const BRIDGE_Y := 0.35
 const KERB_W := 0.5
 const LINE_W := 0.22
 
-const COL_GRASS := Color(0.40, 0.54, 0.31)
+const COL_GRASS := Color(0.4, 0.54, 0.31, 1.0)
 const COL_PARK := Color(0.47, 0.62, 0.35)
 const COL_ROAD := Color(0.34, 0.34, 0.37)
 const COL_WATER := Color(0.31, 0.57, 0.74)

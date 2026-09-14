@@ -9,19 +9,23 @@ const TINTS := [
 	Color(0.58, 0.55, 0.52),
 	Color(0.43, 0.45, 0.47),
 ]
-var _door_dir := 0.0
 
 var occupants: int = 0
 var remaining: int = 0
 
+var _door_dir := 0.0
 var _tint: Color = TINTS[0]
 var _fill := 0.0
+var _mat: ShaderMaterial
 
 @onready var mesh: MeshInstance3D = $MeshInstance3D
 
 
 func _ready() -> void:
-	mesh.material_override = MAT
+	# per-building copy: instance shader params are unreliable in
+	# the Compatibility renderer, which is what the web build uses
+	_mat = MAT.duplicate()
+	mesh.material_override = _mat
 	_apply_tint()
 	_push_fill()
 	set_process(false)
@@ -53,6 +57,20 @@ func is_cleared() -> bool:
 	return occupants > 0 and remaining <= 0
 
 
+func door_point() -> Vector3:
+	var d := door_normal()
+	var half := (scale.z if absf(d.z) > 0.5 else scale.x) * 0.5
+	return global_position + d * (half + 0.6)
+
+
+func door_normal() -> Vector3:
+	match int(_door_dir):
+		1: return Vector3(0.0, 0.0, -1.0)
+		2: return Vector3(1.0, 0.0, 0.0)
+		3: return Vector3(-1.0, 0.0, 0.0)
+		_: return Vector3(0.0, 0.0, 1.0)
+
+
 func _process(delta: float) -> void:
 	var target := _target_fill()
 	if absf(_fill - target) < 0.002:
@@ -72,23 +90,13 @@ func _target_fill() -> float:
 
 
 func _push_fill() -> void:
-	mesh.set_instance_shader_parameter("fill_level", _fill)
+	if _mat == null:
+		return
+	_mat.set_shader_parameter("fill_level", _fill)
 
 
 func _apply_tint() -> void:
-	mesh.set_instance_shader_parameter("full_color", Vector3(_tint.r, _tint.g, _tint.b))
-	mesh.set_instance_shader_parameter("door_dir", _door_dir)
-
-
-func door_point() -> Vector3:
-	var d := door_normal()
-	var half := (scale.z if absf(d.z) > 0.5 else scale.x) * 0.5
-	return global_position + d * (half + 0.6)
-
-
-func door_normal() -> Vector3:
-	match int(_door_dir):
-		1: return Vector3(0.0, 0.0, -1.0)
-		2: return Vector3(1.0, 0.0, 0.0)
-		3: return Vector3(-1.0, 0.0, 0.0)
-		_: return Vector3(0.0, 0.0, 1.0)
+	if _mat == null:
+		return
+	_mat.set_shader_parameter("full_color", Vector3(_tint.r, _tint.g, _tint.b))
+	_mat.set_shader_parameter("door_dir", _door_dir)
