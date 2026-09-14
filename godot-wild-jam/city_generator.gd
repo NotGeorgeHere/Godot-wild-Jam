@@ -37,6 +37,8 @@ var grid: Array = []
 var river_horizontal := false
 var rng := RandomNumberGenerator.new()
 
+var population := 0
+
 var _buildings_root: Node3D
 var _ground: MeshInstance3D
 var _roofs: MeshInstance3D
@@ -78,7 +80,6 @@ func generate(seed_value: int = -1) -> void:
 	_build_roofs()
 
 
-# ---------------------------------------------------------------- grid passes
 
 func _blank_grid() -> void:
 	grid = []
@@ -157,8 +158,6 @@ func _place_parks() -> void:
 					if cx < GRID and cz < GRID and grid[cx][cz] == Cell.GRASS:
 						grid[cx][cz] = Cell.PARK
 
-
-# ------------------------------------------------------------------ buildings
 
 func _clear_buildings() -> void:
 	_roof_data.clear()
@@ -260,11 +259,9 @@ func _normalise_population() -> void:
 				biggest = b
 		biggest.occupants = maxi(1, biggest.occupants + drift)
 		biggest.remaining = biggest.occupants
+	
+	population = TARGET_POPULATION
 
-	print("city population: %d across %d buildings" % [TARGET_POPULATION, all.size()])
-
-
-# --------------------------------------------------------------- ground build
 
 func _build_ground() -> void:
 	var st := SurfaceTool.new()
@@ -354,8 +351,6 @@ func _add_roof(st: SurfaceTool, pos: Vector3, w: float, d: float, h: float,
 		_tri(st, c0, ra, d0, Vector3(-1.0, 0.0, 0.0), col)
 		_tri(st, d1, rb, c1, Vector3(1.0, 0.0, 0.0), col)
 
-
-# --------------------------------------------------------------- mesh helpers
 
 func _add_quad(st: SurfaceTool, cx: int, cz: int, y: float, colour: Color) -> void:
 	var o := _cell_to_world(cx, cz)

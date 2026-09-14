@@ -1,12 +1,10 @@
 extends Node
 
 const RAY_LENGTH := 2000.0
-const KNOCK_EFFECTIVENESS := 0.35
 
 @onready var camera: Camera3D = %Camera3D
 @onready var citizens := %Citizens
 
-var knock_cooldown := 0.5      # upgrades lower this
 var hovered: Building = null
 
 var _cooldown_left := 0.0
@@ -35,6 +33,8 @@ func _update_hover() -> void:
 
 
 func _try_knock() -> void:
+	if not GameState.day_active:
+		return
 	if hovered == null:
 		return
 	if hovered.remaining <= 0:
@@ -42,11 +42,11 @@ func _try_knock() -> void:
 	if _cooldown_left > 0.0:
 		return
 
-	var saved := hovered.knock(KNOCK_EFFECTIVENESS)
+	var saved := hovered.knock(GameState.knock_effectiveness)
 	if saved > 0:
-		_cooldown_left = knock_cooldown
+		_cooldown_left = GameState.knock_cooldown
+		GameState.add_saved(saved)
 		citizens.spawn(hovered.door_point(), hovered.door_normal(), mini(saved, 6))
-		print("saved %d — %d left in this building" % [saved, hovered.remaining])
 
 
 func _building_under_mouse() -> Building:
