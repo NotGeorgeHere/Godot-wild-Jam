@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3 uid="uid://bm3rldb4b8ydu"]
+[gd_scene load_steps=13 format=3 uid="uid://bm3rldb4b8ydu"]
 
 [ext_resource type="Script" uid="uid://tbs8l1dhwisl" path="res://main.gd" id="1_h2yge"]
 [ext_resource type="Script" uid="uid://b05ntw8ibm1bb" path="res://city_generator.gd" id="1_ig7tw"]
@@ -17,6 +17,13 @@ albedo_color = Color(0.16470589, 0.16470589, 0.18039216, 1)
 [sub_resource type="Environment" id="Environment_0xm2m"]
 ambient_light_color = Color(0.23921569, 0.2784314, 0.34117648, 1)
 ambient_light_energy = 0.0
+
+[sub_resource type="TorusMesh" id="TorusMesh_272bh"]
+inner_radius = 0.93
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_5vw27"]
+shading_mode = 0
+albedo_color = Color(1, 0.7764706, 0.3019608, 0.7058824)
 
 [node name="main" type="Node3D"]
 script = ExtResource("1_h2yge")
@@ -48,6 +55,7 @@ surface_material_override/0 = SubResource("StandardMaterial3D_ig7tw")
 environment = SubResource("Environment_0xm2m")
 
 [node name="City" type="Node3D" parent="."]
+unique_name_in_owner = true
 script = ExtResource("1_ig7tw")
 building_scene = ExtResource("2_0xm2m")
 
@@ -125,3 +133,32 @@ horizontal_alignment = 1
 [node name="Continue" type="Button" parent="HUD/EndPanel/Box"]
 layout_mode = 2
 text = "Next day"
+
+[node name="Currency" type="Label" parent="HUD/EndPanel/Box"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+horizontal_alignment = 1
+
+[node name="Shop" type="VBoxContainer" parent="HUD/EndPanel/Box"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="Hotbar" type="HBoxContainer" parent="HUD"]
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -20.0
+offset_top = -40.0
+offset_right = 20.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_constants/separation = 8
+
+[node name="AOERing" type="MeshInstance3D" parent="."]
+unique_name_in_owner = true
+visible = false
+cast_shadow = 0
+mesh = SubResource("TorusMesh_272bh")
+surface_material_override/0 = SubResource("StandardMaterial3D_5vw27")

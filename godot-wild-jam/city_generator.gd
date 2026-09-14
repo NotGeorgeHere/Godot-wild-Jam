@@ -497,3 +497,13 @@ func _nearest_road_dir(cx: int, cz: int) -> float:
 				break
 
 	return best_dir
+	
+func buildings_within(point: Vector3, radius: float) -> Array:
+	var out: Array = []
+	var r2 := radius * radius
+	for b in _buildings_root.get_children():
+		var d: Vector3 = b.global_position - point
+		d.y = 0.0
+		if d.length_squared() <= r2:
+			out.append(b)
+	return out
