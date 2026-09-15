@@ -39,6 +39,9 @@ var rng := RandomNumberGenerator.new()
 
 var population := 0
 
+var astar := AStarGrid2D.new()
+var exit_field: Array = []
+
 var _buildings_root: Node3D
 var _ground: MeshInstance3D
 var _roofs: MeshInstance3D
@@ -75,6 +78,7 @@ func generate(seed_value: int = -1) -> void:
 	_place_parks()
 	_clear_buildings()
 	_place_buildings()
+	_build_navigation()
 	_normalise_population()
 	_build_ground()
 	_build_roofs()
@@ -220,6 +224,7 @@ func _try_spawn(cx: int, cz: int, dist: float) -> void:
 	var pos := _cell_to_world(cx, cz) + Vector3(CELL_SIZE * 1.5, 0.0, CELL_SIZE * 1.5)
 	b.setup(width, depth, height, rng.randi(), people, door_dir)
 	b.position = pos
+	b.road_cell = nearest_road_cell(Vector2i(cx + 1, cz + 1), 5)
 
 	if is_house:
 		_roof_data.append({
@@ -505,5 +510,125 @@ func buildings_within(point: Vector3, radius: float) -> Array:
 		var d: Vector3 = b.global_position - point
 		d.y = 0.0
 		if d.length_squared() <= r2:
+			out.append(b)
+	return out
+
+
+func _drivable(x: int, z: int) -> bool:
+	if x < 0 or x >= GRID or z < 0 or z >= GRID:
+		return false
+	var c: int = grid[x][z]
+	return c == Cell.ROAD or c == Cell.BRIDGE
+
+
+func _build_navigation() -> void:
+	astar.region = Rect2i(0, 0, GRID, GRID)
+	astar.cell_size = Vector2(1.0, 1.0)
+	astar.diagonal_mode = AStarGrid2D.DIAGONAL_MODE_NEVER
+	astar.default_compute_heuristic = AStarGrid2D.HEURISTIC_MANHATTAN
+	astar.update()
+
+	for x in GRID:
+		for z in GRID:
+			astar.set_point_solid(Vector2i(x, z), not _drivable(x, z))
+
+	_build_exit_field()
+
+
+func _build_exit_field() -> void:
+	# breadth-first outward from every drivable cell on the map border
+	exit_field = []
+	for x in GRID:
+		var col := []
+		col.resize(GRID)
+		col.fill(-1)
+		exit_field.append(col)
+
+	var queue: Array[Vector2i] = []
+	for i in GRID:
+		for c in [Vector2i(0, i), Vector2i(GRID - 1, i), Vector2i(i, 0), Vector2i(i, GRID - 1)]:
+			if _drivable(c.x, c.y) and exit_field[c.x][c.y] == -1:
+				exit_field[c.x][c.y] = 0
+				queue.append(c)
+
+	var head := 0
+	while head < queue.size():
+		var c: Vector2i = queue[head]
+		head += 1
+		for d in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
+			var n: Vector2i = c + d
+			if not _drivable(n.x, n.y):
+				continue
+			if exit_field[n.x][n.y] != -1:
+				continue
+			exit_field[n.x][n.y] = exit_field[c.x][c.y] + 1
+			queue.append(n)
+
+
+func world_to_cell(p: Vector3) -> Vector2i:
+	return Vector2i(
+		int(floor(p.x / CELL_SIZE + GRID * 0.5)),
+		int(floor(p.z / CELL_SIZE + GRID * 0.5))
+	)
+
+
+func cell_centre(c: Vector2i) -> Vector3:
+	return _cell_to_world(c.x, c.y) + Vector3(CELL_SIZE * 0.5, 0.0, CELL_SIZE * 0.5)
+
+
+func cell_y(c: Vector2i) -> float:
+	if c.x < 0 or c.x >= GRID or c.y < 0 or c.y >= GRID:
+		return 0.0
+	return BRIDGE_Y if grid[c.x][c.y] == Cell.BRIDGE else 0.0
+
+
+func flow_next(c: Vector2i) -> Vector2i:
+	if not _drivable(c.x, c.y):
+		return c
+	var best_d: int = exit_field[c.x][c.y]
+	if best_d <= 0:
+		return c
+	var best := c
+	for d in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
+		var n: Vector2i = c + d
+		if not _drivable(n.x, n.y):
+			continue
+		var nd: int = exit_field[n.x][n.y]
+		if nd >= 0 and nd < best_d:
+			best_d = nd
+			best = n
+	return best
+
+
+func is_exit_cell(c: Vector2i) -> bool:
+	if not _drivable(c.x, c.y):
+		return true
+	return exit_field[c.x][c.y] <= 0
+
+
+func nearest_road_cell(from: Vector2i, max_r: int = 6) -> Vector2i:
+	for r in range(0, max_r + 1):
+		for dx in range(-r, r + 1):
+			for dz in range(-r, r + 1):
+				if maxi(absi(dx), absi(dz)) != r:
+					continue
+				var c := from + Vector2i(dx, dz)
+				if _drivable(c.x, c.y):
+					return c
+	return Vector2i(-1, -1)
+
+
+func road_path(from: Vector2i, to: Vector2i) -> Array:
+	if from == to:
+		return []
+	if not _drivable(from.x, from.y) or not _drivable(to.x, to.y):
+		return []
+	return astar.get_id_path(from, to)
+
+
+func occupied_buildings() -> Array:
+	var out: Array = []
+	for b in _buildings_root.get_children():
+		if b.remaining > 0 and b.road_cell.x >= 0:
 			out.append(b)
 	return out

@@ -6,6 +6,7 @@ const RAY_LENGTH := 2000.0
 @onready var citizens := %Citizens
 @onready var city := %City
 @onready var ring: MeshInstance3D = %AOERing
+@onready var vehicles := %Vehicles
 
 var hovered: Building = null
 
@@ -109,7 +110,7 @@ func _try_knock() -> void:
 	if saved > 0:
 		_cooldown_left = GameState.knock_cooldown
 		GameState.add_saved(saved)
-		citizens.spawn(hovered.door_point(), hovered.door_normal(), mini(saved, 6))
+		citizens.spawn(hovered.door_point(), hovered.road_cell, mini(saved, 6))
 
 
 func _use_tool(id: String) -> void:
@@ -117,6 +118,10 @@ func _use_tool(id: String) -> void:
 		return
 
 	var data: Dictionary = GameState.TOOLS[id]
+	if data.get("deploy", false):
+		_deploy_vehicle()
+		return
+
 	var targets: Array = city.buildings_within(_ground_point, GameState.radius_of(id))
 	var eff := GameState.effectiveness_of(id)
 	var per_building: int = data["sprites"]
@@ -126,8 +131,17 @@ func _use_tool(id: String) -> void:
 		var got: int = b.knock(eff)
 		if got > 0:
 			total += got
-			citizens.spawn(b.door_point(), b.door_normal(), mini(got, per_building))
+			citizens.spawn(b.door_point(), b.road_cell, mini(got, per_building))
 
 	if total > 0:
 		GameState.add_saved(total)
 		GameState.consume(id)
+
+
+func _deploy_vehicle() -> void:
+	var cell: Vector2i = city.world_to_cell(_ground_point)
+	var road: Vector2i = city.nearest_road_cell(cell, 4)
+	if road.x < 0:
+		return
+	if vehicles.deploy(road):
+		GameState.consume("vehicle")

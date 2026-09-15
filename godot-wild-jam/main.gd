@@ -10,6 +10,7 @@ const DOOM_BEGINS := 0.72      # sky starts reddening here
 @onready var world_env: WorldEnvironment = $WorldEnvironment
 @onready var hud := $HUD
 @onready var cam: Camera3D = %Camera3D
+@onready var vehicles := $Vehicles
 
 var _elapsed := 0.0
 var _running := false
@@ -33,6 +34,7 @@ func _ready() -> void:
 
 
 func _start_day() -> void:
+	vehicles.clear_all()
 	city.generate()
 	GameState.begin_day(city.population)
 	_elapsed = 0.0

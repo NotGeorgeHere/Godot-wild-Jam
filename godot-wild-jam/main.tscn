@@ -1,4 +1,4 @@
-[gd_scene load_steps=13 format=3 uid="uid://bm3rldb4b8ydu"]
+[gd_scene load_steps=14 format=3 uid="uid://bm3rldb4b8ydu"]
 
 [ext_resource type="Script" uid="uid://tbs8l1dhwisl" path="res://main.gd" id="1_h2yge"]
 [ext_resource type="Script" uid="uid://b05ntw8ibm1bb" path="res://city_generator.gd" id="1_ig7tw"]
@@ -7,6 +7,7 @@
 [ext_resource type="Script" uid="uid://b1u4xsr2euhgk" path="res://city_input.gd" id="4_1bvp3"]
 [ext_resource type="Script" uid="uid://tkffv5evwd72" path="res://citizens.gd" id="6_7mycd"]
 [ext_resource type="Script" uid="uid://cs75lnpiy3flo" path="res://hud.gd" id="7_272bh"]
+[ext_resource type="Script" uid="uid://b1q345vr4mil8" path="res://vehicles.gd" id="8_5vw27"]
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_7dm0k"]
 size = Vector2(400, 400)
@@ -162,3 +163,7 @@ visible = false
 cast_shadow = 0
 mesh = SubResource("TorusMesh_272bh")
 surface_material_override/0 = SubResource("StandardMaterial3D_5vw27")
+
+[node name="Vehicles" type="Node3D" parent="."]
+unique_name_in_owner = true
+script = ExtResource("8_5vw27")

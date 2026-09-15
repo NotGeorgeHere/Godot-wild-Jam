@@ -42,7 +42,27 @@ const TOOLS := {
 		"colour": Color(0.45, 0.80, 1.0),
 		"sprites": 2,
 	},
+	"vehicle": {
+		"name": "Vehicle",
+		"cost": 110,
+		"upgrade_base": 260,
+		"upgrade_label": "size",
+		"deploy": true,
+		"radius": 3.0,
+		"radius_per_level": 0.0,
+		"effectiveness": 0.0,
+		"eff_per_level": 0.0,
+		"colour": Color(0.98, 0.58, 0.32),
+		"sprites": 6,
+	},
 }
+
+const VEHICLE_TIERS := [
+	{"name": "Car",     "capacity": 2,   "speed": 17.0, "size": Vector3(2.0, 1.5, 4.2)},
+	{"name": "Van",     "capacity": 5,   "speed": 15.5, "size": Vector3(2.3, 2.2, 5.4)},
+	{"name": "Minibus", "capacity": 12,  "speed": 14.0, "size": Vector3(2.6, 2.7, 7.0)},
+	{"name": "Bus",     "capacity": 20,  "speed": 12.5, "size": Vector3(2.9, 3.2, 9.5)},
+]
 
 # resets every loop
 var total_population := 0
@@ -86,7 +106,15 @@ func upgrade_cost(id: String) -> int:
 	return int(TOOLS[id]["upgrade_base"]) * (int(upgrade_levels[id]) + 1)
 
 
+func vehicle_tier() -> Dictionary:
+	return VEHICLE_TIERS[mini(int(upgrade_levels["vehicle"]), VEHICLE_TIERS.size() - 1)]
+
+
 func upgrade_summary(id: String) -> String:
+	if id == "vehicle":
+		var tier := vehicle_tier()
+		return "%s, %d seats" % [tier["name"], tier["capacity"]]
+
 	var t: Dictionary = TOOLS[id]
 	if t["radius_per_level"] > 0.0:
 		return "%.0fm" % radius_of(id)
@@ -103,6 +131,8 @@ func buy_consumable(id: String) -> void:
 
 
 func buy_upgrade(id: String) -> void:
+	if id == "vehicle" and int(upgrade_levels[id]) >= VEHICLE_TIERS.size() - 1:
+		return
 	var cost := upgrade_cost(id)
 	if currency < cost:
 		return
@@ -125,7 +155,6 @@ func consume(tool_id: String) -> void:
 	inventory_changed.emit()
 	if int(inventory[tool_id]) <= 0:
 		select_tool("")
-
 
 
 func begin_day(population: int) -> void:

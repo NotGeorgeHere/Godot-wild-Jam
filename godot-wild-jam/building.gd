@@ -18,6 +18,8 @@ var _tint: Color = TINTS[0]
 var _fill := 0.0
 var _mat: ShaderMaterial
 
+var road_cell := Vector2i(-1, -1)
+
 @onready var mesh: MeshInstance3D = $MeshInstance3D
 
 
@@ -100,3 +102,11 @@ func _apply_tint() -> void:
 		return
 	_mat.set_shader_parameter("full_color", Vector3(_tint.r, _tint.g, _tint.b))
 	_mat.set_shader_parameter("door_dir", _door_dir)
+
+func take_people(n: int) -> int:
+	if remaining <= 0:
+		return 0
+	var taken: int = mini(n, remaining)
+	remaining -= taken
+	set_process(true)
+	return taken
