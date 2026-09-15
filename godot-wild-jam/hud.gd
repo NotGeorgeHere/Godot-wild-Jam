@@ -30,37 +30,45 @@ func _ready() -> void:
 func _unhandled_key_input(event: InputEvent) -> void:
 	if not (event is InputEventKey and event.pressed and not event.echo):
 		return
-	match event.keycode:
-		KEY_1:
-			GameState.select_tool("")
-		KEY_2:
-			GameState.select_tool("megaphone")
+	if event.keycode == KEY_1:
+		GameState.select_tool("")
+		return
+	var ids := GameState.TOOLS.keys()
+	var idx: int = event.keycode - KEY_2
+	if idx >= 0 and idx < ids.size():
+		GameState.select_tool(ids[idx])
 
 
 func _build_hotbar() -> void:
 	for c in hotbar.get_children():
 		c.queue_free()
+
 	_add_slot("", "1  Knock")
-	_add_slot("megaphone", "2  Megaphone")
+	var n := 2
+	for id in GameState.TOOLS:
+		_add_slot(id, "%d  %s" % [n, GameState.TOOLS[id]["name"]])
+		n += 1
 
 
 func _add_slot(tool_id: String, label: String) -> void:
 	var b := Button.new()
-	b.custom_minimum_size = Vector2(150.0, 46.0)
+	b.custom_minimum_size = Vector2(140.0, 46.0)
 	b.set_meta("tool_id", tool_id)
+	b.set_meta("label", label)
 	b.pressed.connect(func(): GameState.select_tool(tool_id))
 	hotbar.add_child(b)
-	_style_slot(b, label)
+	_style_slot(b)
 
 
-func _style_slot(b: Button, label: String) -> void:
+func _style_slot(b: Button) -> void:
 	var tool_id: String = b.get_meta("tool_id")
-	var count: int = GameState.inventory.get(tool_id, 0)
+	var label: String = b.get_meta("label")
 
 	if tool_id == "":
 		b.text = label
 		b.disabled = false
 	else:
+		var count: int = GameState.inventory.get(tool_id, 0)
 		b.text = "%s  x%d" % [label, count]
 		b.disabled = count <= 0
 
@@ -70,9 +78,7 @@ func _style_slot(b: Button, label: String) -> void:
 
 func _refresh_hotbar() -> void:
 	for c in hotbar.get_children():
-		var b := c as Button
-		var tool_id: String = b.get_meta("tool_id")
-		_style_slot(b, "1  Knock" if tool_id == "" else "2  Megaphone")
+		_style_slot(c as Button)
 
 
 func _on_tool_changed(_tool_id: String) -> void:
@@ -83,18 +89,21 @@ func _build_shop() -> void:
 	for c in shop.get_children():
 		c.queue_free()
 
-	_add_shop_row(
-		"Megaphone  (%d owned)" % GameState.inventory["megaphone"],
-		GameState.MEGAPHONE_COST,
-		func(): GameState.buy_consumable("megaphone")
-	)
+	for id in GameState.TOOLS:
+		var data: Dictionary = GameState.TOOLS[id]
+		var owned: int = GameState.inventory[id]
+		var lvl: int = GameState.upgrade_levels[id]
 
-	var lvl: int = GameState.upgrade_levels["megaphone"]
-	_add_shop_row(
-		"Upgrade range  (Lv %d — %.0fm)" % [lvl, GameState.megaphone_radius()],
-		GameState.upgrade_cost("megaphone"),
-		func(): GameState.buy_upgrade("megaphone")
-	)
+		_add_shop_row(
+			"%s  (have %d)" % [data["name"], owned],
+			GameState.cost_of(id),
+			func(): GameState.buy_consumable(id)
+		)
+		_add_shop_row(
+			"   ↳ %s  Lv%d — %s" % [data["upgrade_label"], lvl, GameState.upgrade_summary(id)],
+			GameState.upgrade_cost(id),
+			func(): GameState.buy_upgrade(id)
+		)
 
 
 func _add_shop_row(label: String, cost: int, on_buy: Callable) -> void:

@@ -12,6 +12,15 @@ var hovered: Building = null
 var _cooldown_left := 0.0
 var _ground_point := Vector3.ZERO
 var _was_pressed := false
+var _ring_mat: StandardMaterial3D
+
+
+func _ready() -> void:
+	_ring_mat = StandardMaterial3D.new()
+	_ring_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	_ring_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	ring.material_override = _ring_mat
+	ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 
 
 func _process(delta: float) -> void:
@@ -28,14 +37,12 @@ func _process(delta: float) -> void:
 		if pressed:
 			_try_knock()
 	elif just_pressed:
-		_use_megaphone()
+		_use_tool(GameState.selected_tool)
 
 
 func _over_ui() -> bool:
 	return get_viewport().gui_get_hovered_control() != null
 
-
-# ------------------------------------------------------------------ targeting
 
 func _mouse_ground_point() -> Vector3:
 	var mouse := get_viewport().get_mouse_position()
@@ -77,16 +84,18 @@ func _update_hover() -> void:
 
 
 func _update_ring() -> void:
-	var active := GameState.selected_tool == "megaphone" and GameState.day_active
+	var id := GameState.selected_tool
+	var active := id != "" and GameState.day_active
 	ring.visible = active
 	if not active:
 		return
-	var r := GameState.megaphone_radius()
+
+	var col: Color = GameState.TOOLS[id]["colour"]
+	_ring_mat.albedo_color = Color(col.r, col.g, col.b, 0.7)
+
+	var r := GameState.radius_of(id)
 	ring.position = _ground_point + Vector3(0.0, 0.25, 0.0)
 	ring.scale = Vector3(r, 1.0, r)
-
-
-# --------------------------------------------------------------------- actions
 
 func _try_knock() -> void:
 	if not GameState.day_active:
@@ -103,18 +112,22 @@ func _try_knock() -> void:
 		citizens.spawn(hovered.door_point(), hovered.door_normal(), mini(saved, 6))
 
 
-func _use_megaphone() -> void:
+func _use_tool(id: String) -> void:
 	if not GameState.day_active:
 		return
 
-	var targets: Array = city.buildings_within(_ground_point, GameState.megaphone_radius())
+	var data: Dictionary = GameState.TOOLS[id]
+	var targets: Array = city.buildings_within(_ground_point, GameState.radius_of(id))
+	var eff := GameState.effectiveness_of(id)
+	var per_building: int = data["sprites"]
+
 	var total := 0
 	for b in targets:
-		var got: int = b.knock(GameState.megaphone_effectiveness())
+		var got: int = b.knock(eff)
 		if got > 0:
 			total += got
-			citizens.spawn(b.door_point(), b.door_normal(), mini(got, 4))
+			citizens.spawn(b.door_point(), b.door_normal(), mini(got, per_building))
 
 	if total > 0:
 		GameState.add_saved(total)
-		GameState.consume("megaphone")
+		GameState.consume(id)
