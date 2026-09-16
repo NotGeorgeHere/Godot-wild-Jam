@@ -48,7 +48,8 @@ func setup(width: float, depth: float, height: float, variant: int, people: int,
 func knock(effectiveness: float) -> int:
 	if remaining <= 0:
 		return 0
-	var responded: int = maxi(1, int(round(remaining * effectiveness)))
+	var eff: float = minf(0.95, effectiveness + GameState.active_warning)
+	var responded: int = maxi(1, int(round(remaining * eff)))
 	responded = mini(responded, remaining)
 	remaining -= responded
 	set_process(true)     # animate the fill toward its new target

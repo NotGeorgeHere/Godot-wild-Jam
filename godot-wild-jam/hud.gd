@@ -30,10 +30,17 @@ func _ready() -> void:
 func _unhandled_key_input(event: InputEvent) -> void:
 	if not (event is InputEventKey and event.pressed and not event.echo):
 		return
+
 	if event.keycode == KEY_1:
 		GameState.select_tool("")
 		return
-	var ids := GameState.TOOLS.keys()
+
+	# passives never appear in the hotbar, so they must not consume a number
+	var ids: Array = []
+	for id in GameState.TOOLS:
+		if not GameState.TOOLS[id].get("passive", false):
+			ids.append(id)
+
 	var idx: int = event.keycode - KEY_2
 	if idx >= 0 and idx < ids.size():
 		GameState.select_tool(ids[idx])
@@ -46,6 +53,8 @@ func _build_hotbar() -> void:
 	_add_slot("", "1  Knock")
 	var n := 2
 	for id in GameState.TOOLS:
+		if GameState.TOOLS[id].get("passive", false):
+			continue
 		_add_slot(id, "%d  %s" % [n, GameState.TOOLS[id]["name"]])
 		n += 1
 
@@ -138,7 +147,10 @@ func _on_continue() -> void:
 
 
 func _on_saved_changed(saved: int, total: int) -> void:
-	saved_label.text = "%d / %d evacuated" % [saved, total]
+	var suffix := ""
+	if GameState.active_warning > 0.0:
+		suffix = "   ⚠ +%d%%" % int(GameState.active_warning * 100.0)
+	saved_label.text = "%d / %d evacuated%s" % [saved, total, suffix]
 	bar.max_value = maxi(total, 1)
 	bar.value = saved
 

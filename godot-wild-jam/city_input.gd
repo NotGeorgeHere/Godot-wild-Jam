@@ -118,6 +118,8 @@ func _use_tool(id: String) -> void:
 		return
 
 	var data: Dictionary = GameState.TOOLS[id]
+	if data.get("passive", false):
+		return
 	if data.get("deploy", false):
 		_deploy_vehicle()
 		return

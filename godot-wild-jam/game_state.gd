@@ -55,6 +55,19 @@ const TOOLS := {
 		"colour": Color(0.98, 0.58, 0.32),
 		"sprites": 6,
 	},
+	"warning": {
+		"name": "Early Warning",
+		"cost": 130,
+		"upgrade_base": 220,
+		"upgrade_label": "coverage",
+		"passive": true,
+		"radius": 0.0,
+		"radius_per_level": 0.0,
+		"effectiveness": 0.0,
+		"eff_per_level": 0.0,
+		"colour": Color(1.0, 0.45, 0.45),
+		"sprites": 0,
+	},
 }
 
 const VEHICLE_TIERS := [
@@ -64,10 +77,14 @@ const VEHICLE_TIERS := [
 	{"name": "Bus",     "capacity": 20,  "speed": 12.5, "size": Vector3(2.9, 3.2, 9.5)},
 ]
 
+const WARNING_BASE := 0.08
+const WARNING_PER_LEVEL := 0.06
+
 # resets every loop
 var total_population := 0
 var saved_today := 0
 var day_active := false
+var active_warning := 0.0
 
 # spent and re-bought each loop
 var inventory := {}
@@ -110,10 +127,17 @@ func vehicle_tier() -> Dictionary:
 	return VEHICLE_TIERS[mini(int(upgrade_levels["vehicle"]), VEHICLE_TIERS.size() - 1)]
 
 
+func warning_strength() -> float:
+	return WARNING_BASE + float(upgrade_levels["warning"]) * WARNING_PER_LEVEL
+
+
 func upgrade_summary(id: String) -> String:
 	if id == "vehicle":
 		var tier := vehicle_tier()
 		return "%s, %d seats" % [tier["name"], tier["capacity"]]
+
+	if id == "warning":
+		return "+%d%% response" % int(warning_strength() * 100.0)
 
 	var t: Dictionary = TOOLS[id]
 	if t["radius_per_level"] > 0.0:
@@ -144,6 +168,8 @@ func buy_upgrade(id: String) -> void:
 func select_tool(tool_id: String) -> void:
 	if tool_id != "" and int(inventory.get(tool_id, 0)) <= 0:
 		tool_id = ""
+	if tool_id != "" and TOOLS[tool_id].get("passive", false):
+		tool_id = ""
 	selected_tool = tool_id
 	tool_changed.emit(selected_tool)
 
@@ -162,6 +188,15 @@ func begin_day(population: int) -> void:
 	total_population = population
 	saved_today = 0
 	day_active = true
+
+	# an armed warning is spent as the day starts
+	if int(inventory["warning"]) > 0:
+		active_warning = warning_strength()
+		inventory["warning"] -= 1
+		inventory_changed.emit()
+	else:
+		active_warning = 0.0
+
 	select_tool("")
 	saved_changed.emit(saved_today, total_population)
 
