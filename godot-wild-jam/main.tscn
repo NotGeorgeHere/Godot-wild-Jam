@@ -131,18 +131,22 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 20
 horizontal_alignment = 1
 
-[node name="Continue" type="Button" parent="HUD/EndPanel/Box"]
-layout_mode = 2
-text = "Next day"
-
 [node name="Currency" type="Label" parent="HUD/EndPanel/Box"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 22
 horizontal_alignment = 1
 
-[node name="Shop" type="VBoxContainer" parent="HUD/EndPanel/Box"]
+[node name="Shop" type="ScrollContainer" parent="HUD/EndPanel/Box"]
+custom_minimum_size = Vector2(0, 260)
 layout_mode = 2
-theme_override_constants/separation = 6
+
+[node name="ShopList" type="VBoxContainer" parent="HUD/EndPanel/Box/Shop"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Continue" type="Button" parent="HUD/EndPanel/Box"]
+layout_mode = 2
+text = "Next day"
 
 [node name="Hotbar" type="HBoxContainer" parent="HUD"]
 anchors_preset = 7

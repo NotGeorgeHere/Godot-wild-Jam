@@ -106,9 +106,9 @@ func _try_knock() -> void:
 	if _cooldown_left > 0.0:
 		return
 
-	var saved := hovered.knock(GameState.knock_effectiveness)
+	var saved := hovered.knock(GameState.knock_effectiveness())
 	if saved > 0:
-		_cooldown_left = GameState.knock_cooldown
+		_cooldown_left = GameState.knock_cooldown()
 		GameState.add_saved(saved)
 		citizens.spawn(hovered.door_point(), hovered.road_cell, mini(saved, 6))
 

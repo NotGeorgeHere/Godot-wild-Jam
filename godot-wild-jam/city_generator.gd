@@ -166,6 +166,7 @@ func _place_parks() -> void:
 func _clear_buildings() -> void:
 	_roof_data.clear()
 	for child in _buildings_root.get_children():
+		_buildings_root.remove_child(child)   # immediate, unlike queue_free
 		child.queue_free()
 
 
@@ -264,8 +265,12 @@ func _normalise_population() -> void:
 				biggest = b
 		biggest.occupants = maxi(1, biggest.occupants + drift)
 		biggest.remaining = biggest.occupants
-	
-	population = TARGET_POPULATION
+
+	# count what's actually there rather than trusting the target
+	var real_total := 0
+	for b in all:
+		real_total += b.occupants
+	population = real_total
 
 
 func _build_ground() -> void:

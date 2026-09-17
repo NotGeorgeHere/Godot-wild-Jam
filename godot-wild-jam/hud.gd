@@ -11,7 +11,7 @@ signal continue_pressed
 @onready var title: Label = $EndPanel/Box/Title
 @onready var stats: Label = $EndPanel/Box/Stats
 @onready var currency_label: Label = $EndPanel/Box/Currency
-@onready var shop: VBoxContainer = $EndPanel/Box/Shop
+@onready var shop: VBoxContainer = $EndPanel/Box/Shop/ShopList
 
 
 func _ready() -> void:
@@ -77,9 +77,9 @@ func _style_slot(b: Button) -> void:
 		b.text = label
 		b.disabled = false
 	else:
-		var count: int = GameState.inventory.get(tool_id, 0)
-		b.text = "%s  x%d" % [label, count]
-		b.disabled = count <= 0
+		var left: int = GameState.uses.get(tool_id, 0)
+		b.text = "%s  x%d" % [label, left]
+		b.disabled = left <= 0
 
 	var selected := GameState.selected_tool == tool_id
 	b.modulate = Color(1.0, 0.85, 0.35) if selected else Color(1.0, 1.0, 1.0)
@@ -98,21 +98,38 @@ func _build_shop() -> void:
 	for c in shop.get_children():
 		c.queue_free()
 
+	# knock upgrades first — they're the thing everyone always has
+	for id in GameState.EXTRA_UPGRADES:
+		_add_upgrade_row(id)
+
 	for id in GameState.TOOLS:
 		var data: Dictionary = GameState.TOOLS[id]
 		var owned: int = GameState.inventory[id]
-		var lvl: int = GameState.upgrade_levels[id]
-
 		_add_shop_row(
-			"%s  (have %d)" % [data["name"], owned],
+			"%s  (own %d)" % [data["name"], owned],
 			GameState.cost_of(id),
 			func(): GameState.buy_consumable(id)
 		)
-		_add_shop_row(
-			"   ↳ %s  Lv%d — %s" % [data["upgrade_label"], lvl, GameState.upgrade_summary(id)],
-			GameState.upgrade_cost(id),
-			func(): GameState.buy_upgrade(id)
-		)
+		_add_upgrade_row(id)
+
+
+func _add_upgrade_row(id: String) -> void:
+	var lvl: int = GameState.upgrade_levels[id]
+	var label := "   ↳ %s  Lv%d — %s" % [
+		GameState.upgrade_name(id), lvl, GameState.upgrade_summary(id)
+	]
+
+	if GameState.upgrade_maxed(id):
+		var row := HBoxContainer.new()
+		var l := Label.new()
+		l.text = "%s   (max)" % label
+		l.modulate = Color(0.6, 0.6, 0.6)
+		l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_child(l)
+		shop.add_child(row)
+		return
+
+	_add_shop_row(label, GameState.upgrade_cost(id), func(): GameState.buy_upgrade(id))
 
 
 func _add_shop_row(label: String, cost: int, on_buy: Callable) -> void:
@@ -139,7 +156,6 @@ func _refresh_all() -> void:
 	if end_panel.visible:
 		currency_label.text = "%d credits" % GameState.currency
 		_build_shop()
-
 
 
 func _on_continue() -> void:

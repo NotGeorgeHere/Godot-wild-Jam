@@ -1,6 +1,6 @@
 extends Node3D
 
-const DAY_LENGTH := 100.0
+const DAY_LENGTH := 70.0
 const START_HOUR := 8.0
 const END_HOUR := 20.0
 const DOOM_BEGINS := 0.72      # sky starts reddening here
