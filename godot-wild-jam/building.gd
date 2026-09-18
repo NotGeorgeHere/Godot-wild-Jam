@@ -30,6 +30,7 @@ func _ready() -> void:
 	mesh.material_override = _mat
 	_apply_tint()
 	_push_fill()
+	_set_dim(1.0)
 	set_process(false)
 
 
@@ -111,3 +112,27 @@ func take_people(n: int) -> int:
 	remaining -= taken
 	set_process(true)
 	return taken
+
+func collapse(delay: float) -> void:
+	set_process(false)
+	if is_cleared():
+		return            # evacuated buildings are left standing
+
+	var tilt_x := randf_range(-0.22, 0.22)
+	var tilt_z := randf_range(-0.22, 0.22)
+	var drop: float = -scale.y * 0.95
+	var dur := randf_range(1.1, 1.7)
+
+	var tw := create_tween()
+	tw.tween_interval(delay)
+	tw.tween_property(self, "position:y", drop, dur) \
+		.set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_CUBIC)
+	tw.set_parallel(true)
+	tw.tween_property(self, "rotation:x", tilt_x, dur)
+	tw.tween_property(self, "rotation:z", tilt_z, dur)
+	tw.tween_method(_set_dim, 1.0, 0.16, dur * 0.8)
+
+
+func _set_dim(v: float) -> void:
+	if _mat != null:
+		_mat.set_shader_parameter("dim", v)

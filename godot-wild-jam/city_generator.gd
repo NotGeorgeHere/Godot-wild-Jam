@@ -637,3 +637,6 @@ func occupied_buildings() -> Array:
 		if b.remaining > 0 and b.road_cell.x >= 0:
 			out.append(b)
 	return out
+
+func all_buildings() -> Array:
+	return _buildings_root.get_children()

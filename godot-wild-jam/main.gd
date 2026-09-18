@@ -11,6 +11,7 @@ const DOOM_BEGINS := 0.72      # sky starts reddening here
 @onready var hud := $HUD
 @onready var cam: Camera3D = %Camera3D
 @onready var vehicles := $Vehicles
+@onready var meteor := %Meteor
 
 var _elapsed := 0.0
 var _running := false
@@ -43,6 +44,7 @@ func _start_day() -> void:
 	GameState.begin_day(city.population)
 	_elapsed = 0.0
 	_running = true
+	meteor.set_progress(0.0, cam.size)
 	hud.hide_results()
 
 
@@ -59,6 +61,7 @@ func _process(delta: float) -> void:
 
 
 func _update_sky(t: float) -> void:
+	meteor.set_progress(t, cam.size)
 	var arc := sin(t * PI)                 # 0 at dawn, 1 at noon, 0 at dusk
 	var doom: float = clampf((t - DOOM_BEGINS) / (1.0 - DOOM_BEGINS), 0.0, 1.0)
 
@@ -78,10 +81,18 @@ func _update_sky(t: float) -> void:
 func _end_day() -> void:
 	_running = false
 	_shake = 1.0
+	meteor.hide_meteor()
 	hud.flash(Color(1.0, 0.42, 0.20))
-	await get_tree().create_timer(1.3).timeout
+	_collapse_city()
+	await get_tree().create_timer(2.6).timeout
 	GameState.end_day()
 
+func _collapse_city() -> void:
+	var impact := Vector3.ZERO
+	for b in city.all_buildings():
+		var d: float = Vector3(b.global_position.x, 0.0, b.global_position.z).distance_to(impact)
+		# shockwave travels outward at ~90 units/sec
+		b.collapse(d / 90.0 + randf_range(0.0, 0.12))
 
 func _update_shake(delta: float) -> void:
 	if _shake <= 0.0:
@@ -105,6 +116,7 @@ func _on_all_saved() -> void:
 	if not _running:
 		return
 	_running = false
+	meteor.hide_meteor()
 	hud.flash(Color(0.45, 1.0, 0.65))     # green, not the disaster orange
 	await get_tree().create_timer(0.8).timeout
 	GameState.end_day()
