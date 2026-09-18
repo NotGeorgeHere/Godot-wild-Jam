@@ -148,7 +148,7 @@ func cost_of(id: String) -> int:
 	var base: int = TOOLS[id]["cost"]
 	var owned: int = int(inventory[id])
 	# +45% per unit owned, so the 3rd megaphone costs roughly twice the 1st
-	return int(round(float(base) * pow(1.45, float(owned))))
+	return int(round(float(base) * pow(1.6, float(owned))))
 
 
 func vehicle_tier() -> Dictionary:
