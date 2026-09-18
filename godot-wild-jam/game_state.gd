@@ -4,48 +4,49 @@ signal saved_changed(saved: int, total: int)
 signal day_ended(saved: int, total: int)
 signal inventory_changed
 signal tool_changed(tool_id: String)
+signal all_saved
 
 const TOOLS := {
 	"megaphone": {
 		"name": "Megaphone",
 		"cost": 30,
-		"upgrade_base": 55,
+		"upgrade_base": 50,
 		"upgrade_label": "range",
-		"radius": 16.0,
-		"radius_per_level": 6.0,
-		"effectiveness": 0.55,
+		"radius": 26.0,
+		"radius_per_level": 7.0,
+		"effectiveness": 0.60,
 		"eff_per_level": 0.0,
 		"colour": Color(1.0, 0.78, 0.30),
 		"sprites": 4,
 	},
 	"tv": {
 		"name": "TV Alert",
-		"cost": 55,
-		"upgrade_base": 80,
+		"cost": 50,
+		"upgrade_base": 70,
 		"upgrade_label": "reach",
-		"radius": 10.0,
-		"radius_per_level": 4.0,
-		"effectiveness": 0.85,
+		"radius": 16.0,
+		"radius_per_level": 5.0,
+		"effectiveness": 0.90,
 		"eff_per_level": 0.0,
 		"colour": Color(0.72, 0.55, 1.0),
 		"sprites": 6,
 	},
 	"radio": {
 		"name": "Radio",
-		"cost": 70,
-		"upgrade_base": 95,
+		"cost": 65,
+		"upgrade_base": 85,
 		"upgrade_label": "listeners",
-		"radius": 50.0,
-		"radius_per_level": 6.0,
-		"effectiveness": 0.20,
-		"eff_per_level": 0.07,
+		"radius": 55.0,
+		"radius_per_level": 5.0,
+		"effectiveness": 0.25,
+		"eff_per_level": 0.06,
 		"colour": Color(0.45, 0.80, 1.0),
 		"sprites": 2,
 	},
 	"vehicle": {
 		"name": "Vehicle",
 		"cost": 45,
-		"upgrade_base": 90,
+		"upgrade_base": 85,
 		"upgrade_label": "size",
 		"deploy": true,
 		"radius": 3.0,
@@ -57,8 +58,8 @@ const TOOLS := {
 	},
 	"warning": {
 		"name": "Early Warning",
-		"cost": 80,
-		"upgrade_base": 110,
+		"cost": 70,
+		"upgrade_base": 90,
 		"upgrade_label": "coverage",
 		"passive": true,
 		"radius": 0.0,
@@ -71,21 +72,21 @@ const TOOLS := {
 }
 
 const VEHICLE_TIERS := [
-	{"name": "Car",     "capacity": 4,   "speed": 17.0, "size": Vector3(2.0, 1.5, 4.2)},
-	{"name": "Van",     "capacity": 10,  "speed": 15.5, "size": Vector3(2.3, 2.2, 5.4)},
-	{"name": "Minibus", "capacity": 22,  "speed": 14.0, "size": Vector3(2.6, 2.7, 7.0)},
-	{"name": "Bus",     "capacity": 45,  "speed": 12.5, "size": Vector3(2.9, 3.2, 9.5)},
+	{"name": "Car",     "capacity": 8,   "speed": 17.0, "size": Vector3(2.0, 1.5, 4.2)},
+	{"name": "Van",     "capacity": 18,  "speed": 15.5, "size": Vector3(2.3, 2.2, 5.4)},
+	{"name": "Minibus", "capacity": 32,  "speed": 14.0, "size": Vector3(2.6, 2.7, 7.0)},
+	{"name": "Bus",     "capacity": 60,  "speed": 12.5, "size": Vector3(2.9, 3.2, 9.5)},
 ]
 
-# upgrades that aren't tied to a buyable item
 const EXTRA_UPGRADES := {
-	"knock_power": {"name": "Knock persuasion", "base": 45},
+	"knock_power": {"name": "Knock persuasion", "base": 40},
 	"knock_speed": {"name": "Knock speed", "base": 40},
 }
 
 const KNOCK_BASE_EFF := 0.35
 const KNOCK_EFF_PER_LEVEL := 0.09
 const KNOCK_MAX_EFF := 0.90
+const KNOCK_MAX_LEVEL := 3
 
 const KNOCK_BASE_CD := 0.50
 const KNOCK_CD_PER_LEVEL := 0.07
@@ -144,7 +145,10 @@ func effectiveness_of(id: String) -> float:
 
 
 func cost_of(id: String) -> int:
-	return TOOLS[id]["cost"]
+	var base: int = TOOLS[id]["cost"]
+	var owned: int = int(inventory[id])
+	# +45% per unit owned, so the 3rd megaphone costs roughly twice the 1st
+	return int(round(float(base) * pow(1.45, float(owned))))
 
 
 func vehicle_tier() -> Dictionary:
@@ -169,10 +173,8 @@ func upgrade_cost(id: String) -> int:
 func upgrade_maxed(id: String) -> bool:
 	if id == "vehicle":
 		return int(upgrade_levels[id]) >= VEHICLE_TIERS.size() - 1
-	if id == "knock_power":
-		return knock_effectiveness() >= KNOCK_MAX_EFF
-	if id == "knock_speed":
-		return knock_cooldown() <= KNOCK_MIN_CD
+	if id == "knock_power" or id == "knock_speed":
+		return int(upgrade_levels[id]) >= KNOCK_MAX_LEVEL
 	return false
 
 
@@ -252,9 +254,11 @@ func begin_day(population: int) -> void:
 func add_saved(count: int) -> void:
 	saved_today += count
 	saved_changed.emit(saved_today, total_population)
-
+	if day_active and saved_today >= total_population:
+		all_saved.emit()
 
 func end_day() -> void:
 	day_active = false
 	currency += saved_today
 	day_ended.emit(saved_today, total_population)
+	

@@ -139,6 +139,8 @@ func _add_shop_row(label: String, cost: int, on_buy: Callable) -> void:
 	var name_label := Label.new()
 	name_label.text = label
 	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	name_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	name_label.custom_minimum_size = Vector2(0.0, 0.0)
 	row.add_child(name_label)
 
 	var buy := Button.new()
@@ -186,8 +188,14 @@ func flash(colour: Color) -> void:
 
 
 func show_results(saved: int, total: int) -> void:
-	title.text = "EVERYONE SAVED" if saved >= total else "THE CITY IS GONE"
-	stats.text = "%d of %d evacuated\nDay %d" % [saved, total, GameState.loop_number]
+	if saved >= total:
+		title.text = "EVERYONE SAVED"
+		title.modulate = Color(0.45, 1.0, 0.65)
+		stats.text = "All %d evacuated — day %d" % [total, GameState.loop_number]
+	else:
+		title.text = "THE CITY IS GONE"
+		title.modulate = Color(1.0, 0.45, 0.35)
+		stats.text = "%d of %d evacuated\nDay %d" % [saved, total, GameState.loop_number]
 	currency_label.text = "%d credits" % GameState.currency
 	_build_shop()
 	end_panel.show()

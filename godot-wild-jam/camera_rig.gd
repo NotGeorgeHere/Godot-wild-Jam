@@ -45,6 +45,8 @@ func _unhandled_input(event: InputEvent) -> void:
 				_target_yaw += ROT_STEP
 
 	if event is InputEventMouseButton and event.pressed:
+		if get_viewport().gui_get_hovered_control() != null:
+			return
 		match event.button_index:
 			MOUSE_BUTTON_WHEEL_UP:
 				_target_zoom = clampf(_target_zoom - ZOOM_STEP, ZOOM_MIN, ZOOM_MAX)
@@ -53,6 +55,8 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _handle_pan(delta: float) -> void:
+	if not GameState.day_active:
+		return
 	var input := Vector2.ZERO
 	if Input.is_key_pressed(KEY_W):
 		input.y -= 1.0

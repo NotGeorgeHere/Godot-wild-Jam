@@ -1,6 +1,6 @@
 extends Node3D
 
-const DAY_LENGTH := 70.0
+const DAY_LENGTH := 60.0
 const START_HOUR := 8.0
 const END_HOUR := 20.0
 const DOOM_BEGINS := 0.72      # sky starts reddening here
@@ -29,6 +29,10 @@ func _ready() -> void:
 		_ambient_base = env.ambient_light_color
 		_ambient_energy = env.ambient_light_energy
 
+	hud.continue_pressed.connect(_start_day)
+	_start_day()
+	
+	GameState.all_saved.connect(_on_all_saved)
 	hud.continue_pressed.connect(_start_day)
 	_start_day()
 
@@ -96,3 +100,11 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode == KEY_R and not _running:
 			_start_day()
+
+func _on_all_saved() -> void:
+	if not _running:
+		return
+	_running = false
+	hud.flash(Color(0.45, 1.0, 0.65))     # green, not the disaster orange
+	await get_tree().create_timer(0.8).timeout
+	GameState.end_day()
