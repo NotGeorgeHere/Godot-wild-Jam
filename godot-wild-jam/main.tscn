@@ -163,6 +163,55 @@ grow_horizontal = 2
 grow_vertical = 0
 theme_override_constants/separation = 8
 
+[node name="IntroPanel" type="PanelContainer" parent="HUD"]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -20.0
+offset_right = 20.0
+offset_bottom = 20.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Box" type="VBoxContainer" parent="HUD/IntroPanel"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="Title" type="Label" parent="HUD/IntroPanel/Box"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_font_sizes/font_size = 40
+text = "IMMINENT DOOM"
+
+[node name="Body" type="Label" parent="HUD/IntroPanel/Box"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 17
+text = "A meteor strikes at 20:00.
+Get everyone out before it lands.
+
+Click and hold a building to knock on doors
+Hold longer. Not everyone answers first time
+
+Q / E  rotate    Scroll  zoom    WASD  pan
+M  mute
+
+Save all 1200 in a single day to win."
+
+[node name="Hint" type="Label" parent="HUD/IntroPanel/Box"]
+modulate = Color(0.47843137, 0.5254902, 0.59607846, 1)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_font_sizes/font_size = 14
+text = "Each day you fail, you keep what you earned."
+
+[node name="Begin" type="Button" parent="HUD/IntroPanel/Box"]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+text = "Begin Day 1"
+
 [node name="AOERing" type="MeshInstance3D" parent="."]
 unique_name_in_owner = true
 visible = false
