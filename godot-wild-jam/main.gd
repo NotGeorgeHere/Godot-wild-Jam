@@ -29,9 +29,6 @@ func _ready() -> void:
 	if env != null:
 		_ambient_base = env.ambient_light_color
 		_ambient_energy = env.ambient_light_energy
-
-	hud.continue_pressed.connect(_start_day)
-	_start_day()
 	
 	GameState.all_saved.connect(_on_all_saved)
 	hud.continue_pressed.connect(_start_day)
@@ -42,6 +39,9 @@ func _start_day() -> void:
 	vehicles.clear_all()
 	city.generate()
 	GameState.begin_day(city.population)
+	Audio.start_ambience()
+	if GameState.active_warning > 0.0:
+		Audio.play("siren")
 	_elapsed = 0.0
 	_running = true
 	meteor.set_progress(0.0, cam.size)
@@ -76,13 +76,16 @@ func _update_sky(t: float) -> void:
 	if env != null:
 		env.ambient_light_color = _ambient_base.lerp(Color(0.85, 0.28, 0.20), doom)
 		env.ambient_light_energy = _ambient_energy * lerpf(1.0, 1.5, doom)
-
+	Audio.set_doom(t)
+	Audio.set_zoom(cam.size)
 
 func _end_day() -> void:
 	_running = false
 	_shake = 1.0
 	meteor.hide_meteor()
 	hud.flash(Color(1.0, 0.42, 0.20))
+	Audio.play("impact")
+	Audio.stop_ambience()
 	_collapse_city()
 	await get_tree().create_timer(2.6).timeout
 	GameState.end_day()
@@ -118,5 +121,7 @@ func _on_all_saved() -> void:
 	_running = false
 	meteor.hide_meteor()
 	hud.flash(Color(0.45, 1.0, 0.65))     # green, not the disaster orange
+	Audio.play("win")
+	Audio.stop_ambience()
 	await get_tree().create_timer(0.8).timeout
 	GameState.end_day()

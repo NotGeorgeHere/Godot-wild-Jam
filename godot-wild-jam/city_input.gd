@@ -105,13 +105,13 @@ func _try_knock() -> void:
 		return
 	if _cooldown_left > 0.0:
 		return
-
+	Audio.play_knock()
 	var saved := hovered.knock(GameState.knock_effectiveness())
 	if saved > 0:
 		_cooldown_left = GameState.knock_cooldown()
 		GameState.add_saved(saved)
 		citizens.spawn(hovered.door_point(), hovered.road_cell, mini(saved, 6))
-
+	
 
 func _use_tool(id: String) -> void:
 	if not GameState.day_active:
@@ -138,6 +138,7 @@ func _use_tool(id: String) -> void:
 	if total > 0:
 		GameState.add_saved(total)
 		GameState.consume(id)
+		Audio.play(id)
 
 
 func _deploy_vehicle() -> void:
@@ -147,3 +148,4 @@ func _deploy_vehicle() -> void:
 		return
 	if vehicles.deploy(road):
 		GameState.consume("vehicle")
+		Audio.play("car_horn", 0.06)

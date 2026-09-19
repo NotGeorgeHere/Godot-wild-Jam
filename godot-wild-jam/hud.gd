@@ -30,8 +30,13 @@ func _ready() -> void:
 func _unhandled_key_input(event: InputEvent) -> void:
 	if not (event is InputEventKey and event.pressed and not event.echo):
 		return
-
+	
+	if event.keycode == KEY_M:
+		Audio.toggle_mute()
+		return
+	
 	if event.keycode == KEY_1:
+		Audio.click()
 		GameState.select_tool("")
 		return
 
@@ -64,7 +69,10 @@ func _add_slot(tool_id: String, label: String) -> void:
 	b.custom_minimum_size = Vector2(140.0, 46.0)
 	b.set_meta("tool_id", tool_id)
 	b.set_meta("label", label)
-	b.pressed.connect(func(): GameState.select_tool(tool_id))
+	b.pressed.connect(func():
+		Audio.click()
+		GameState.select_tool(tool_id)
+	)
 	hotbar.add_child(b)
 	_style_slot(b)
 
@@ -147,7 +155,10 @@ func _add_shop_row(label: String, cost: int, on_buy: Callable) -> void:
 	buy.text = "Buy  %d" % cost
 	buy.custom_minimum_size = Vector2(110.0, 0.0)
 	buy.disabled = GameState.currency < cost
-	buy.pressed.connect(on_buy)
+	buy.pressed.connect(func():
+		on_buy.call()
+		Audio.play("purchase")
+	)
 	row.add_child(buy)
 
 	shop.add_child(row)
