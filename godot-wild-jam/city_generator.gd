@@ -1,3 +1,4 @@
+class_name CityGenerator
 extends Node3D
 
 enum Cell { GRASS, ROAD, WATER, PARK, BRIDGE }
@@ -11,13 +12,18 @@ const KERB_W := 0.5
 const LINE_W := 0.22
 
 const COL_GRASS := Color(0.4, 0.54, 0.31, 1.0)
-const COL_PARK := Color(0.47, 0.62, 0.35)
+const COL_PARK := Color(0.44, 0.59, 0.32)
 const COL_ROAD := Color(0.34, 0.34, 0.37)
 const COL_WATER := Color(0.31, 0.57, 0.74)
 const COL_BANK := Color(0.45, 0.38, 0.29)
 const COL_KERB := Color(0.62, 0.62, 0.64)
 const COL_LINE := Color(0.88, 0.85, 0.66)
 const COL_BRIDGE := Color(0.46, 0.42, 0.38)
+
+const COL_TRUNK := Color(0.32, 0.23, 0.16)
+const COL_LEAF := Color(0.22, 0.42, 0.20)
+const COL_POLE := Color(0.28, 0.30, 0.33)
+const COL_LAMP := Color(1.0, 0.88, 0.62)
 
 const HOUSE_HEIGHT_MAX := 13.0
 const ROOF_OVERHANG := 1.12
@@ -42,11 +48,17 @@ var population := 0
 var astar := AStarGrid2D.new()
 var exit_field: Array = []
 
+var _blocked: Array = []          # cells a building footprint sits on
 var _buildings_root: Node3D
 var _ground: MeshInstance3D
 var _roofs: MeshInstance3D
 var _roof_data: Array = []
 
+var _mm_trunk: MultiMeshInstance3D
+var _mm_leaf: MultiMeshInstance3D
+var _mm_pole: MultiMeshInstance3D
+var _mm_lamp: MultiMeshInstance3D
+var _mm_hill: MultiMeshInstance3D
 
 func _ready() -> void:
 	_buildings_root = Node3D.new()
@@ -68,6 +80,12 @@ func _ready() -> void:
 	_roofs.material_override = mat
 	add_child(_roofs)
 
+	_mm_trunk = _make_mm("Trunks", _cyl(0.30, 0.38, 2.2), COL_TRUNK, true)
+	_mm_leaf = _make_mm("Leaves", _cyl(0.0, 1.5, 3.4), COL_LEAF, true)
+	_mm_pole = _make_mm("Poles", _cyl(0.14, 0.18, 6.0), COL_POLE, true)
+	_mm_lamp = _make_mm("Lamps", _box(Vector3(0.7, 0.28, 0.7)), COL_LAMP, false)
+	_mm_hill = _make_mm("Hills", _hill_mesh(), Color(0.20, 0.28, 0.16), true)
+
 
 func generate(seed_value: int = -1) -> void:
 	rng.seed = seed_value if seed_value >= 0 else randi()
@@ -82,16 +100,21 @@ func generate(seed_value: int = -1) -> void:
 	_normalise_population()
 	_build_ground()
 	_build_roofs()
-
-
+	_build_props()
 
 func _blank_grid() -> void:
 	grid = []
+	_blocked = []
 	for x in GRID:
 		var col := []
 		col.resize(GRID)
 		col.fill(Cell.GRASS)
 		grid.append(col)
+
+		var bcol := []
+		bcol.resize(GRID)
+		bcol.fill(false)
+		_blocked.append(bcol)
 
 
 func _carve_river() -> void:
@@ -219,13 +242,18 @@ func _try_spawn(cx: int, cz: int, dist: float) -> void:
 
 	var volume: float = width * depth * height
 	var people: int = maxi(2, int(volume * 0.012 * rng.randf_range(0.75, 1.25)))
-	
+
 	var door_dir := _nearest_road_dir(cx, cz)
-	
+
 	var pos := _cell_to_world(cx, cz) + Vector3(CELL_SIZE * 1.5, 0.0, CELL_SIZE * 1.5)
 	b.setup(width, depth, height, rng.randi(), people, door_dir)
 	b.position = pos
 	b.road_cell = nearest_road_cell(Vector2i(cx + 1, cz + 1), 5)
+
+	# mark the footprint so props don't spawn inside it
+	for x in range(cx, cx + 3):
+		for z in range(cz, cz + 3):
+			_blocked[x][z] = true
 
 	if is_house:
 		_roof_data.append({
@@ -307,8 +335,6 @@ func _colour_for(type: int) -> Color:
 		_: return COL_GRASS
 
 
-# ----------------------------------------------------------------- roof build
-
 func _build_roofs() -> void:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
@@ -360,6 +386,130 @@ func _add_roof(st: SurfaceTool, pos: Vector3, w: float, d: float, h: float,
 		_tri(st, d1, ra, rb, nb, col)
 		_tri(st, c0, ra, d0, Vector3(-1.0, 0.0, 0.0), col)
 		_tri(st, d1, rb, c1, Vector3(1.0, 0.0, 0.0), col)
+
+
+func _cyl(top: float, bottom: float, h: float) -> Mesh:
+	var m := CylinderMesh.new()
+	m.top_radius = top
+	m.bottom_radius = bottom
+	m.height = h
+	m.radial_segments = 7
+	m.rings = 1
+	return m
+
+
+func _box(size: Vector3) -> Mesh:
+	var m := BoxMesh.new()
+	m.size = size
+	return m
+
+
+func _make_mm(node_name: String, mesh: Mesh, col: Color, shaded: bool) -> MultiMeshInstance3D:
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = col
+	mat.roughness = 0.95
+	if not shaded:
+		mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		mat.emission_enabled = true
+		mat.emission = col
+		mat.emission_energy_multiplier = 0.8
+
+	var mm := MultiMesh.new()
+	mm.transform_format = MultiMesh.TRANSFORM_3D
+	mm.mesh = mesh
+	mm.instance_count = 0
+
+	var node := MultiMeshInstance3D.new()
+	node.name = node_name
+	node.material_override = mat
+	node.multimesh = mm
+	if not shaded:
+		node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(node)
+	return node
+
+
+func _build_props() -> void:
+	var trunks: Array[Transform3D] = []
+	var leaves: Array[Transform3D] = []
+	var poles: Array[Transform3D] = []
+	var lamps: Array[Transform3D] = []
+	var hills: Array[Transform3D] = []
+
+	for x in GRID:
+		for z in GRID:
+			if _blocked[x][z]:
+				continue
+			match grid[x][z]:
+				Cell.PARK:
+					_scatter_trees(x, z, 2, trunks, leaves)
+				Cell.ROAD:
+					_maybe_lamp(x, z, poles, lamps)
+				Cell.GRASS:
+					if rng.randf() < 0.07:
+						_scatter_trees(x, z, 1, trunks, leaves)
+	
+	_scatter_hills(hills)
+	_scatter_surround(trunks, leaves)
+	
+	_fill(_mm_trunk, trunks)
+	_fill(_mm_leaf, leaves)
+	_fill(_mm_pole, poles)
+	_fill(_mm_lamp, lamps)
+	_fill(_mm_hill, hills)
+
+
+func _scatter_trees(cx: int, cz: int, max_count: int,
+		trunks: Array[Transform3D], leaves: Array[Transform3D]) -> void:
+	var count := rng.randi_range(1, max_count)
+	for i in count:
+		var o := _cell_to_world(cx, cz)
+		var pos := Vector3(
+			o.x + rng.randf_range(1.0, CELL_SIZE - 1.0),
+			0.0,
+			o.z + rng.randf_range(1.0, CELL_SIZE - 1.0)
+		)
+		var s := rng.randf_range(0.8, 1.35)
+		var basis := Basis(Vector3.UP, rng.randf() * TAU).scaled_local(Vector3(s, s, s))
+
+		trunks.append(Transform3D(basis, pos + Vector3(0.0, 1.1 * s, 0.0)))
+		leaves.append(Transform3D(basis, pos + Vector3(0.0, 3.6 * s, 0.0)))
+
+
+func _maybe_lamp(cx: int, cz: int,
+	poles: Array[Transform3D], lamps: Array[Transform3D]) -> void:
+	# one every few cells, on road edges that back onto green
+	if (cx + cz) % 6 != 0:
+		return
+
+	var green_dir := Vector2i.ZERO
+	for d in [Vector2i(-1, 0), Vector2i(1, 0), Vector2i(0, -1), Vector2i(0, 1)]:
+		var nb: int = _neighbour(cx, cz, d.x, d.y)
+		if nb == Cell.GRASS or nb == Cell.PARK:
+			green_dir = d
+			break
+	if green_dir == Vector2i.ZERO:
+		return
+
+	var o := _cell_to_world(cx, cz)
+	# sit just inside the kerb on the green side
+	var inset := CELL_SIZE * 0.5 - KERB_W * 0.6
+	var pos := Vector3(
+		o.x + CELL_SIZE * 0.5 + float(green_dir.x) * inset,
+		0.0,
+		o.z + CELL_SIZE * 0.5 + float(green_dir.y) * inset
+	)
+
+	poles.append(Transform3D(Basis(), pos + Vector3(0.0, 3.0, 0.0)))
+	var arm := Vector3(float(-green_dir.x), 0.0, float(-green_dir.y)) * 0.9
+	lamps.append(Transform3D(Basis(), pos + Vector3(0.0, 6.1, 0.0) + arm))
+
+
+func _fill(node: MultiMeshInstance3D, items: Array[Transform3D]) -> void:
+	var mm := node.multimesh
+	mm.instance_count = items.size()
+	for i in items.size():
+		mm.set_instance_transform(i, items[i])
 
 
 func _add_quad(st: SurfaceTool, cx: int, cz: int, y: float, colour: Color) -> void:
@@ -507,7 +657,8 @@ func _nearest_road_dir(cx: int, cz: int) -> float:
 				break
 
 	return best_dir
-	
+
+
 func buildings_within(point: Vector3, radius: float) -> Array:
 	var out: Array = []
 	var r2 := radius * radius
@@ -638,5 +789,66 @@ func occupied_buildings() -> Array:
 			out.append(b)
 	return out
 
+
 func all_buildings() -> Array:
 	return _buildings_root.get_children()
+
+
+func _scatter_surround(trunks: Array[Transform3D], leaves: Array[Transform3D]) -> void:
+	# forest beyond the map edge, so the city doesn't end in a hard line
+	var inner := GRID * CELL_SIZE * 0.5          # 96 — the city's half-width
+	var band := 85.0
+	var outer := inner + band
+
+	for i in 2600:
+		var pos := Vector3(
+			rng.randf_range(-outer, outer),
+			0.0,
+			rng.randf_range(-outer, outer)
+		)
+
+		# how far outside the city square this point sits
+		var beyond: float = maxf(absf(pos.x), absf(pos.z)) - inner
+		if beyond < 2.0:
+			continue                              # inside the city, skip
+
+		# thin out with distance so it fades rather than stopping dead
+		var falloff: float = 1.0 - clampf(beyond / band, 0.0, 1.0)
+		if rng.randf() > 0.35 + falloff * 0.65:
+			continue
+
+		var s := rng.randf_range(0.9, 1.9)
+		var basis := Basis(Vector3.UP, rng.randf() * TAU).scaled_local(Vector3(s, s, s))
+		trunks.append(Transform3D(basis, pos + Vector3(0.0, 1.1 * s, 0.0)))
+		leaves.append(Transform3D(basis, pos + Vector3(0.0, 3.6 * s, 0.0)))
+
+func _scatter_hills(hills: Array[Transform3D]) -> void:
+	var inner := GRID * CELL_SIZE * 0.5
+	var band := 100.0
+	var outer := inner + band
+
+	for i in 22:
+		var pos := Vector3(
+			rng.randf_range(-outer, outer),
+			0.0,
+			rng.randf_range(-outer, outer)
+		)
+		var beyond: float = maxf(absf(pos.x), absf(pos.z)) - inner
+		if beyond < 25.0:
+			continue          # keep them well clear of the city edge
+
+		var w := rng.randf_range(12.0, 24.0)
+		var h := rng.randf_range(2.5, 5.0)
+		hills.append(Transform3D(
+			Basis(Vector3.UP, rng.randf() * TAU).scaled_local(Vector3(w, h, w)),
+			pos + Vector3(0.0, -2.0, 0.0)      # sunk so they rise out of the ground
+		))
+
+func _hill_mesh() -> Mesh:
+	var m := SphereMesh.new()
+	m.radius = 1.0
+	m.height = 1.0          # squashed dome
+	m.radial_segments = 10
+	m.rings = 4
+	m.is_hemisphere = true
+	return m
