@@ -89,6 +89,7 @@ func _ready() -> void:
 
 func generate(seed_value: int = -1) -> void:
 	rng.seed = seed_value if seed_value >= 0 else randi()
+	city_name = _make_name()
 	_blank_grid()
 	_carve_river()
 	_lay_roads()
@@ -852,3 +853,20 @@ func _hill_mesh() -> Mesh:
 	m.rings = 4
 	m.is_hemisphere = true
 	return m
+
+# in city_generator.gd
+const NAME_PRE := ["Ash", "Bram", "Cald", "Dun", "East", "Fen", "Grim", "Hal",
+	"Kirk", "Lang", "Marl", "North", "Oak", "Pel", "Red", "Stan", "Thorn",
+	"Ved", "West", "Yar"]
+const NAME_MID := ["", "", "", "bor", "dal", "ling", "mer", "ton", "wick"]
+const NAME_SUF := ["bridge", "burgh", "by", "cliff", "combe", "ford", "gate",
+	"haven", "holm", "mouth", "port", "stead", "thorpe", "vale", "wold"]
+
+var city_name := ""
+
+
+func _make_name() -> String:
+	var n: String = NAME_PRE[rng.randi() % NAME_PRE.size()]
+	n += NAME_MID[rng.randi() % NAME_MID.size()]
+	n += NAME_SUF[rng.randi() % NAME_SUF.size()]
+	return n

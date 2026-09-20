@@ -93,6 +93,9 @@ layout_mode = 2
 theme_override_constants/separation = 4
 alignment = 1
 
+[node name="CityName" type="Label" parent="HUD/TopPanel/Top"]
+layout_mode = 2
+
 [node name="Clock" type="Label" parent="HUD/TopPanel/Top"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 34

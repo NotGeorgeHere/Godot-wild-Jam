@@ -16,7 +16,9 @@ signal intro_dismissed
 @onready var shop: VBoxContainer = $EndPanel/Box/Shop/ShopList
 @onready var intro_panel: PanelContainer = $IntroPanel
 @onready var settings_panel: PanelContainer = $SettingsPanel
+@onready var city_name_label: Label = $TopPanel/Top/CityName
 
+var _city_name := ""
 
 func _ready() -> void:
 	$EndPanel/Box/Continue.pressed.connect(_on_continue)
@@ -65,6 +67,10 @@ func _apply_styles() -> void:
 	UIStyle.style_bar(bar)
 	bar.custom_minimum_size = Vector2(0.0, 14.0)
 	bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	
+	city_name_label.add_theme_font_size_override("font_size", 15)
+	city_name_label.add_theme_color_override("font_color", UIStyle.TEXT_DIM)
+	city_name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
 
 func _unhandled_key_input(event: InputEvent) -> void:
@@ -277,12 +283,13 @@ func flash(colour: Color) -> void:
 
 
 func show_results(saved: int, total: int) -> void:
+	var place := _city_name.to_upper() if _city_name != "" else "THE CITY"
 	if saved >= total:
-		title.text = "EVERYONE SAVED"
+		title.text = "%s IS SAFE" % place
 		title.modulate = Color(0.45, 1.0, 0.65)
 		stats.text = "All %d evacuated — day %d" % [total, GameState.loop_number]
 	else:
-		title.text = "THE CITY IS GONE"
+		title.text = "%s IS GONE" % place
 		title.modulate = Color(1.0, 0.45, 0.35)
 		stats.text = "%d of %d evacuated\nDay %d" % [saved, total, GameState.loop_number]
 	currency_label.text = "%d credits" % GameState.currency
@@ -360,3 +367,7 @@ func _wire_slider(row_name: String, label: String, value: float, on_set: Callabl
 		on_set.call(v)
 		Settings.apply_audio()
 	)
+
+func set_city_name(n: String) -> void:
+	_city_name = n
+	city_name_label.text = n.to_upper()

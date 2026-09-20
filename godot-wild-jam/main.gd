@@ -42,6 +42,7 @@ func _ready() -> void:
 func _prepare_day() -> void:
 	vehicles.clear_all()
 	city.generate()
+	hud.set_city_name(city.city_name)
 	GameState.begin_day(city.population)
 	GameState.day_active = false      # nothing counts until Begin is pressed
 	_elapsed = 0.0
