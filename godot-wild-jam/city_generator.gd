@@ -337,6 +337,7 @@ func _colour_for(type: int) -> Color:
 
 
 func _build_roofs() -> void:
+	_roofs.visible = true
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	for r in _roof_data:
@@ -870,3 +871,6 @@ func _make_name() -> String:
 	n += NAME_MID[rng.randi() % NAME_MID.size()]
 	n += NAME_SUF[rng.randi() % NAME_SUF.size()]
 	return n
+
+func hide_roofs() -> void:
+	_roofs.visible = false

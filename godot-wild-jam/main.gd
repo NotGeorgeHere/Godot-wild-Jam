@@ -125,6 +125,7 @@ func _on_all_saved() -> void:
 
 
 func _collapse_city() -> void:
+	city.hide_roofs()
 	var impact := Vector3.ZERO
 	for b in city.all_buildings():
 		var d: float = Vector3(b.global_position.x, 0.0, b.global_position.z).distance_to(impact)

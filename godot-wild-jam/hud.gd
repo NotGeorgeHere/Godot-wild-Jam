@@ -196,7 +196,7 @@ func _build_shop() -> void:
 
 func _add_upgrade_row(id: String) -> void:
 	var lvl: int = GameState.upgrade_levels[id]
-	var label := "   ↳ %s  Lv%d — %s" % [
+	var label := "    %s  Lv%d — %s" % [
 		GameState.upgrade_name(id), lvl, GameState.upgrade_summary(id)
 	]
 
