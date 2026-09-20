@@ -4,9 +4,10 @@ signal continue_pressed
 signal intro_dismissed
 
 @onready var flash_rect: ColorRect = $Flash
-@onready var clock: Label = $Top/Clock
-@onready var saved_label: Label = $Top/Saved
-@onready var bar: ProgressBar = $Top/Bar
+@onready var top_panel: PanelContainer = $TopPanel
+@onready var clock: Label = $TopPanel/Top/Clock
+@onready var saved_label: Label = $TopPanel/Top/Saved
+@onready var bar: ProgressBar = $TopPanel/Top/Bar
 @onready var hotbar: HBoxContainer = $Hotbar
 @onready var end_panel: PanelContainer = $EndPanel
 @onready var title: Label = $EndPanel/Box/Title
@@ -46,6 +47,19 @@ func _apply_styles() -> void:
 
 	UIStyle.style_button($EndPanel/Box/Continue)
 	UIStyle.style_button($IntroPanel/Box/Begin)
+	
+	var top_style := UIStyle.flat(
+		Color(0.055, 0.075, 0.102, 0.82), UIStyle.LINE, 2, 6, 26, 12
+	)
+	top_panel.add_theme_stylebox_override("panel", top_style)
+
+	clock.add_theme_font_size_override("font_size", 40)
+	saved_label.add_theme_font_size_override("font_size", 18)
+	UIStyle.outline(clock, 0)
+	UIStyle.outline(saved_label, 0)
+	UIStyle.style_bar(bar)
+	bar.custom_minimum_size = Vector2(0.0, 14.0)
+	bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
 
 func _unhandled_key_input(event: InputEvent) -> void:
@@ -75,9 +89,11 @@ func _unhandled_key_input(event: InputEvent) -> void:
 
 func show_intro() -> void:
 	intro_panel.show()
+	Audio.start_shop_music()
 
 
 func _on_begin() -> void:
+	Audio.stop_shop_music()
 	Audio.click()
 	intro_panel.hide()
 	intro_dismissed.emit()
@@ -216,8 +232,6 @@ func _refresh_all() -> void:
 		_build_shop()
 
 
-# ----------------------------------------------------------------------- day
-
 func _on_continue() -> void:
 	Audio.click()
 	continue_pressed.emit()
@@ -228,8 +242,15 @@ func _on_saved_changed(saved: int, total: int) -> void:
 	if GameState.active_warning > 0.0:
 		suffix = "   ⚠ +%d%%" % int(GameState.active_warning * 100.0)
 	saved_label.text = "%d / %d evacuated%s" % [saved, total, suffix]
+
 	bar.max_value = maxi(total, 1)
-	bar.value = saved
+	bar.value = maxf(float(saved), bar.max_value * 0.012) if saved > 0 else 0.0
+
+	# red when you're behind, green as you close in
+	var frac: float = float(saved) / float(maxi(total, 1))
+	var fill := bar.get_theme_stylebox("fill") as StyleBoxFlat
+	if fill != null:
+		fill.bg_color = Color(0.86, 0.35, 0.28).lerp(Color(0.29, 0.85, 0.55), frac)
 
 
 func set_clock(hour: float, t: float) -> void:
@@ -258,8 +279,10 @@ func show_results(saved: int, total: int) -> void:
 	currency_label.text = "%d credits" % GameState.currency
 	_build_shop()
 	end_panel.show()
+	Audio.start_shop_music()
 
 
 func hide_results() -> void:
 	end_panel.hide()
 	_refresh_hotbar()
+	Audio.stop_shop_music()

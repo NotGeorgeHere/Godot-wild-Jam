@@ -28,6 +28,7 @@ var _next := 0
 var _rumble: AudioStreamPlayer
 var _crowd: AudioStreamPlayer
 
+var _shop_music: AudioStreamPlayer
 
 func _ready() -> void:
 	for i in range(1, KNOCK_COUNT + 1):
@@ -49,6 +50,7 @@ func _ready() -> void:
 
 	_rumble = _make_loop("res://sfx/rumble_loop.wav", "Ambient", -8.0)
 	_crowd = _make_loop("res://sfx/crowd_loop.wav", "Ambient", -12.0)
+	_shop_music = _make_loop("res://music/shop_music.ogg", "Ambient", -16.0)
 
 
 func _make_loop(path: String, bus: String, db: float) -> AudioStreamPlayer:
@@ -133,3 +135,12 @@ func toggle_mute() -> bool:
 	var muted := not AudioServer.is_bus_mute(0)
 	AudioServer.set_bus_mute(0, muted)
 	return muted
+
+func start_shop_music() -> void:
+	if _shop_music != null and not _shop_music.playing:
+		_shop_music.play()
+
+
+func stop_shop_music() -> void:
+	if _shop_music != null:
+		_shop_music.stop()

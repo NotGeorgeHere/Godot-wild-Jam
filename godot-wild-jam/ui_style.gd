@@ -54,15 +54,18 @@ static func style_panel(p: PanelContainer, pad := 22) -> void:
 
 
 static func style_bar(bar: ProgressBar) -> void:
+	bar.custom_minimum_size = Vector2(340.0, 16.0)
+	bar.show_percentage = false
+
 	var bg := StyleBoxFlat.new()
-	bg.bg_color = Color(0.09, 0.11, 0.14, 0.85)
-	bg.set_corner_radius_all(3)
-	bg.set_border_width_all(1)
+	bg.bg_color = Color(0.04, 0.05, 0.07, 0.9)
+	bg.set_corner_radius_all(8)
+	bg.set_border_width_all(2)
 	bg.border_color = LINE
 
 	var fill := StyleBoxFlat.new()
 	fill.bg_color = Color(0.286, 0.749, 0.616)
-	fill.set_corner_radius_all(3)
+	fill.set_corner_radius_all(8)
 
 	bar.add_theme_stylebox_override("background", bg)
 	bar.add_theme_stylebox_override("fill", fill)

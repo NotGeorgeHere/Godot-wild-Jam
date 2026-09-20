@@ -11,7 +11,7 @@
 [ext_resource type="Script" uid="uid://dl6mfxu0smliy" path="res://meteor.gd" id="9_kek77"]
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_7dm0k"]
-size = Vector2(400, 400)
+size = Vector2(700, 700)
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ig7tw"]
 albedo_color = Color(0.22745098, 0.2901961, 0.18039216, 1)
@@ -79,28 +79,31 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="Top" type="VBoxContainer" parent="HUD"]
+[node name="TopPanel" type="PanelContainer" parent="HUD"]
 anchors_preset = 5
 anchor_left = 0.5
 anchor_right = 0.5
-offset_left = -20.0
-offset_right = 20.0
-offset_bottom = 40.0
+offset_left = -160.0
+offset_right = 160.0
+offset_bottom = 87.0
 grow_horizontal = 2
+
+[node name="Top" type="VBoxContainer" parent="HUD/TopPanel"]
+layout_mode = 2
 theme_override_constants/separation = 4
 alignment = 1
 
-[node name="Clock" type="Label" parent="HUD/Top"]
+[node name="Clock" type="Label" parent="HUD/TopPanel/Top"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 34
 horizontal_alignment = 1
 
-[node name="Saved" type="Label" parent="HUD/Top"]
+[node name="Saved" type="Label" parent="HUD/TopPanel/Top"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 20
 horizontal_alignment = 1
 
-[node name="Bar" type="ProgressBar" parent="HUD/Top"]
+[node name="Bar" type="ProgressBar" parent="HUD/TopPanel/Top"]
 custom_minimum_size = Vector2(320, 0)
 layout_mode = 2
 show_percentage = false
