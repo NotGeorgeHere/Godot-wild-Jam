@@ -19,6 +19,7 @@ config/icon="res://icon.svg"
 
 GameState="*res://game_state.gd"
 Audio="*res://audio.gd"
+Settings="*res://settings.gd"
 
 [display]
 

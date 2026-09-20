@@ -199,7 +199,8 @@ Click and hold a building to knock on doors
 Hold longer. Not everyone answers first time
 
 Q / E  rotate    Scroll  zoom    WASD  pan
-M  mute
+M  mute 
+ESC setings menu
 
 Save all 1200 in a single day to win."
 
@@ -207,13 +208,90 @@ Save all 1200 in a single day to win."
 modulate = Color(0.47843137, 0.5254902, 0.59607846, 1)
 layout_mode = 2
 size_flags_horizontal = 4
-theme_override_font_sizes/font_size = 14
+theme_override_font_sizes/font_size = 16
 text = "Each day you fail, you keep what you earned."
 
 [node name="Begin" type="Button" parent="HUD/IntroPanel/Box"]
 custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 text = "Begin Day 1"
+
+[node name="SettingsBtn" type="Button" parent="HUD/IntroPanel/Box"]
+layout_mode = 2
+text = "Settings"
+
+[node name="SettingsPanel" type="PanelContainer" parent="HUD"]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -20.0
+offset_right = 20.0
+offset_bottom = 20.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Box" type="VBoxContainer" parent="HUD/SettingsPanel"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="Title" type="Label" parent="HUD/SettingsPanel/Box"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_font_sizes/font_size = 32
+text = "SETTINGS"
+
+[node name="SfxRow" type="HBoxContainer" parent="HUD/SettingsPanel/Box"]
+layout_mode = 2
+
+[node name="Name" type="Label" parent="HUD/SettingsPanel/Box/SfxRow"]
+layout_mode = 2
+
+[node name="Slider" type="HSlider" parent="HUD/SettingsPanel/Box/SfxRow"]
+layout_mode = 2
+
+[node name="AmbientRow" type="HBoxContainer" parent="HUD/SettingsPanel/Box"]
+layout_mode = 2
+
+[node name="Name" type="Label" parent="HUD/SettingsPanel/Box/AmbientRow"]
+layout_mode = 2
+
+[node name="Slider" type="HSlider" parent="HUD/SettingsPanel/Box/AmbientRow"]
+layout_mode = 2
+
+[node name="UiRow" type="HBoxContainer" parent="HUD/SettingsPanel/Box"]
+layout_mode = 2
+
+[node name="Name" type="Label" parent="HUD/SettingsPanel/Box/UiRow"]
+layout_mode = 2
+
+[node name="Slider" type="HSlider" parent="HUD/SettingsPanel/Box/UiRow"]
+layout_mode = 2
+
+[node name="MotionRow" type="HBoxContainer" parent="HUD/SettingsPanel/Box"]
+layout_mode = 2
+
+[node name="Name" type="Label" parent="HUD/SettingsPanel/Box/MotionRow"]
+layout_mode = 2
+
+[node name="Check" type="CheckBox" parent="HUD/SettingsPanel/Box/MotionRow"]
+layout_mode = 2
+
+[node name="SpeedRow" type="HBoxContainer" parent="HUD/SettingsPanel/Box"]
+layout_mode = 2
+
+[node name="Name" type="Label" parent="HUD/SettingsPanel/Box/SpeedRow"]
+layout_mode = 2
+
+[node name="Options" type="OptionButton" parent="HUD/SettingsPanel/Box/SpeedRow"]
+layout_mode = 2
+
+[node name="Close" type="Button" parent="HUD/SettingsPanel/Box"]
+layout_mode = 2
+text = "Close
+"
 
 [node name="AOERing" type="MeshInstance3D" parent="."]
 unique_name_in_owner = true

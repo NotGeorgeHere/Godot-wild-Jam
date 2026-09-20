@@ -43,13 +43,15 @@ func _prepare_day() -> void:
 	vehicles.clear_all()
 	city.generate()
 	GameState.begin_day(city.population)
+	GameState.day_active = false      # nothing counts until Begin is pressed
 	_elapsed = 0.0
-	_running = false           # frozen until the player is ready
+	_running = false
 	meteor.set_progress(0.0, cam.size)
 	hud.hide_results()
 
 
 func _begin_running() -> void:
+	GameState.day_active = true
 	_running = true
 	Audio.start_ambience()
 	if GameState.active_warning > 0.0:
@@ -64,10 +66,10 @@ func _start_day() -> void:
 func _process(delta: float) -> void:
 	if _running:
 		_elapsed += delta
-		var t: float = clampf(_elapsed / DAY_LENGTH, 0.0, 1.0)
+		var t: float = clampf(_elapsed / Settings.day_length, 0.0, 1.0)
 		_update_sky(t)
 		hud.set_clock(START_HOUR + t * (END_HOUR - START_HOUR), t)
-		if _elapsed >= DAY_LENGTH:
+		if _elapsed >= Settings.day_length:
 			_end_day()
 
 	_update_shake(delta)
@@ -97,9 +99,10 @@ func _update_sky(t: float) -> void:
 
 func _end_day() -> void:
 	_running = false
-	_shake = 1.0
+	if not Settings.reduce_motion:
+		_shake = 1.0
+		hud.flash(Color(1.0, 0.42, 0.20))
 	meteor.hide_meteor()
-	hud.flash(Color(1.0, 0.42, 0.20))
 	Audio.play("impact")
 	Audio.stop_ambience()
 	_collapse_city()
@@ -112,7 +115,8 @@ func _on_all_saved() -> void:
 		return
 	_running = false
 	meteor.hide_meteor()
-	hud.flash(Color(0.45, 1.0, 0.65))     # green, not the disaster orange
+	if not Settings.reduce_motion:
+		hud.flash(Color(0.45, 1.0, 0.65))
 	Audio.play("win")
 	Audio.stop_ambience()
 	await get_tree().create_timer(0.8).timeout

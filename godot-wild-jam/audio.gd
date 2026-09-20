@@ -120,7 +120,7 @@ func set_doom(t: float) -> void:
 
 func set_zoom(view_size: float) -> void:
 	var t: float = clampf(inverse_lerp(CLOSE_VIEW, FAR_VIEW, view_size), 0.0, 1.0)
-	_set_bus("SFX", lerpf(2.0, -9.0, t))        # street sounds quieten from above
+	_set_bus("SFX", Settings.sfx_db + lerpf(2.0, -9.0, t))
 	if _crowd != null:
 		_crowd.volume_db = lerpf(-6.0, -26.0, t)
 

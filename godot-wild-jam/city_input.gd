@@ -42,7 +42,12 @@ func _process(delta: float) -> void:
 
 
 func _over_ui() -> bool:
-	return get_viewport().gui_get_hovered_control() != null
+	if get_viewport().gui_get_hovered_control() != null:
+		return true
+	var hud_node := get_tree().current_scene.get_node_or_null("HUD")
+	if hud_node != null and hud_node.settings_panel.visible:
+		return true
+	return false
 
 
 func _mouse_ground_point() -> Vector3:

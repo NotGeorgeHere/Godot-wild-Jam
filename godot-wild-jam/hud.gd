@@ -15,11 +15,16 @@ signal intro_dismissed
 @onready var currency_label: Label = $EndPanel/Box/Currency
 @onready var shop: VBoxContainer = $EndPanel/Box/Shop/ShopList
 @onready var intro_panel: PanelContainer = $IntroPanel
+@onready var settings_panel: PanelContainer = $SettingsPanel
 
 
 func _ready() -> void:
 	$EndPanel/Box/Continue.pressed.connect(_on_continue)
 	$IntroPanel/Box/Begin.pressed.connect(_on_begin)
+	settings_panel.hide()
+	$IntroPanel/Box/SettingsBtn.pressed.connect(toggle_settings)
+	$SettingsPanel/Box/Close.pressed.connect(toggle_settings)
+	_wire_settings()
 	end_panel.hide()
 	intro_panel.hide()
 	flash_rect.color = Color(1.0, 0.42, 0.20, 0.0)
@@ -74,7 +79,11 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		Audio.click()
 		GameState.select_tool("")
 		return
-
+	
+	if event.keycode == KEY_ESCAPE:
+		toggle_settings()
+		return
+	
 	# passives never appear in the hotbar, so they must not consume a number
 	var ids: Array = []
 	for id in GameState.TOOLS:
@@ -286,3 +295,68 @@ func hide_results() -> void:
 	end_panel.hide()
 	_refresh_hotbar()
 	Audio.stop_shop_music()
+
+func toggle_settings() -> void:
+	Audio.click()
+	if settings_panel.visible:
+		settings_panel.hide()
+		Settings.save_settings()
+	else:
+		settings_panel.show()
+
+
+func _wire_settings() -> void:
+	UIStyle.style_panel(settings_panel)
+	UIStyle.style_button($SettingsPanel/Box/Close)
+	UIStyle.style_button($IntroPanel/Box/SettingsBtn)
+
+	_wire_slider("SfxRow", "Effects", Settings.sfx_db,
+		func(v): Settings.sfx_db = v)
+	_wire_slider("AmbientRow", "Music & ambience", Settings.ambient_db,
+		func(v): Settings.ambient_db = v)
+	_wire_slider("UiRow", "Interface", Settings.ui_db,
+		func(v): Settings.ui_db = v)
+
+	var motion_row := $SettingsPanel/Box/MotionRow
+	motion_row.get_node("Name").text = "Reduce flashing and shake"
+	var check: CheckBox = motion_row.get_node("Check")
+	check.button_pressed = Settings.reduce_motion
+	check.toggled.connect(func(on):
+		Settings.reduce_motion = on
+		Settings.save_settings()
+	)
+
+	var speed_row := $SettingsPanel/Box/SpeedRow
+	speed_row.get_node("Name").text = "Day length"
+	var opts: OptionButton = speed_row.get_node("Options")
+	opts.clear()
+	opts.add_item("Brisk  (45s)")
+	opts.add_item("Normal  (60s)")
+	opts.add_item("Relaxed  (90s)")
+	var lengths := [45.0, 60.0, 90.0]
+	opts.selected = lengths.find(Settings.day_length)
+	if opts.selected < 0:
+		opts.selected = 1
+	opts.item_selected.connect(func(i):
+		Settings.day_length = lengths[i]
+		Settings.save_settings()
+	)
+
+
+func _wire_slider(row_name: String, label: String, value: float, on_set: Callable) -> void:
+	var row := $SettingsPanel/Box.get_node(row_name)
+	var name_label: Label = row.get_node("Name")
+	name_label.text = label
+	name_label.custom_minimum_size = Vector2(210.0, 0.0)
+	name_label.add_theme_color_override("font_color", UIStyle.TEXT)
+
+	var slider: HSlider = row.get_node("Slider")
+	slider.min_value = -40.0
+	slider.max_value = 6.0
+	slider.step = 1.0
+	slider.value = value
+	slider.custom_minimum_size = Vector2(240.0, 0.0)
+	slider.value_changed.connect(func(v):
+		on_set.call(v)
+		Settings.apply_audio()
+	)
